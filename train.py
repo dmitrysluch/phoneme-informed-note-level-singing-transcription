@@ -10,7 +10,6 @@ from phn_ast.midi import save_midi
 from phn_ast.decoding import FramewiseDecoder
 from phn_ast.model import TranscriptionModel
 from phn_ast.feature import FeatureExtractor
-from typing import Any
 import os
 
 import myplotlib.pyplot as plt
