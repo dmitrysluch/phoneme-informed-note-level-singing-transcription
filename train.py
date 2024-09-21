@@ -61,7 +61,7 @@ class AudioDataset(Dataset):
         assert sr == self.config['sample_rate']
         fftlen = (audio.shape[0] + self.config['win_length']) // self.config['hop_length']
         labels = self.get_labels(self.labels, path, fftlen)
-        return dict(x=audio, labels=labels)
+        return audio, labels
 
 def eval_mean_square(x: np.ndarray) -> float:
     """
@@ -125,7 +125,7 @@ class SignalSampler:
         labels = labels[start:start+crop_size_frames]
         start_a, end_a = librosa.frames_to_samples([start, start+crop_size_frames], hop_length=self.config["hop_length"])
         audio = audio[start_a: end_a]
-        return audio, labels
+        return dict(x=audio, labels=labels)
 
     def __len__(self) -> int:
         return len(self.dataset) * 60 if self.len is None else self.len
