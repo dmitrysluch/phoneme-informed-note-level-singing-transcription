@@ -61,7 +61,7 @@ class AudioDataset(Dataset):
         assert sr == self.config['sample_rate']
         fftlen = (audio.shape[0] + self.config['win_length']) // self.config['hop_length']
         labels = self.get_labels(self.labels, path, fftlen)
-        return audio, labels
+        return dict(x=audio, labels=labels)
 
 def eval_mean_square(x: np.ndarray) -> float:
     """
