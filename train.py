@@ -12,7 +12,7 @@ from phn_ast.model import TranscriptionModel
 from phn_ast.feature import FeatureExtractor
 import os
 
-import myplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 
 import transformers
 from subprocess import run
