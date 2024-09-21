@@ -41,7 +41,7 @@ class TranscriptionModel(nn.Module):
         return pitch_conv_stack, lang_conv_stack, pitch_rnn, lang_rnn, combined_rnn, combined_fc
 
     def forward(self, x, labels):
-        pitch_feature = self.pitch_feat_ext(x).transpose(1, 2).unsqueeze(1)[:,:,:labels,:]
+        pitch_feature = self.pitch_feat_ext(x).transpose(1, 2).unsqueeze(1)[:,:,:labels.shape[0],:]
 
         lang_batch = self.lang_model.run_on_batch({'audio': x})
         lang_feature = lang_batch['frame'].unsqueeze(1)
