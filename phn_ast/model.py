@@ -56,6 +56,6 @@ class TranscriptionModel(nn.Module):
         x_combined = self.combined_fc(x_combined)
 
         x_combined = x_combined[:,:labels.shape[1],:]
-        loss = F.binary_cross_entropy(x_combined.transposed(1, 2), labels.transposed(1, 2))
+        loss = F.binary_cross_entropy(x_combined.transpose(1, 2), labels.transpose(1, 2))
 
         return loss, x_combined
