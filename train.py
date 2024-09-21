@@ -127,7 +127,7 @@ class SignalSampler:
         audio = audio[start_a: end_a]
         return audio, labels
 
-    def __len__(self, index) -> int:
+    def __len__(self) -> int:
         return len(self.dataset) * 60 if len is None else len
 
     def __getitem__(self, index) -> np.ndarray:
