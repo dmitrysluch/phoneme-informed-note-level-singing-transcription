@@ -125,7 +125,7 @@ class SignalSampler:
         labels = labels[start:start+crop_size_frames]
         start_a, end_a = librosa.frames_to_samples([start, start+crop_size_frames], hop_length=self.config["hop_length"])
         audio = audio[start_a: end_a]
-        return dict(x=audio, labels=labels)
+        return audio, labels
 
     def __len__(self) -> int:
         return len(self.dataset) * 60 if self.len is None else self.len
@@ -167,7 +167,7 @@ class SignalSampler:
         assert label_res.ndim == 2, result.shape
         assert label_res.shape[0] == self.crop_size_frames
 
-        return audio_res, label_res
+        return dict(x=audio_res, labels=label_res)
 
 class S3Callback(transformers.TrainerCallback):
     def on_epoch_end(self, args, state, control, **kwargs):
