@@ -41,7 +41,7 @@ class TranscriptionModel(nn.Module):
         return pitch_conv_stack, lang_conv_stack, pitch_rnn, lang_rnn, combined_rnn, combined_fc
 
     def forward(self, x, labels):
-        pitch_feature = self.pitch_feat_ext(x).transpose(1, 2).unsqueeze(1)[:,:,:labels.shape[0],:]
+        pitch_feature = self.pitch_feat_ext(x).transpose(1, 2).unsqueeze(1)
 
         lang_batch = self.lang_model.run_on_batch({'audio': x})
         lang_feature = lang_batch['frame'].unsqueeze(1)
@@ -55,6 +55,6 @@ class TranscriptionModel(nn.Module):
         x_combined = self.combined_rnn(torch.cat([x_pitch_rnn, x_lang_rnn], dim=2))
         x_combined = self.combined_fc(x_combined)
 
-        loss = F.cross_entropy(x_combined, labels)
+        loss = F.cross_entropy(x_combined[:labels.shape[0],:], labels)
 
         return loss, x_combined
