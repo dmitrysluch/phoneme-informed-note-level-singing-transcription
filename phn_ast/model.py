@@ -55,8 +55,7 @@ class TranscriptionModel(nn.Module):
         x_combined = self.combined_rnn(torch.cat([x_pitch_rnn, x_lang_rnn], dim=2))
         x_combined = self.combined_fc(x_combined)
 
-        print(x_combined.shape, labels.shape)
-
-        loss = F.binary_cross_entropy(x_combined[:labels.shape[1],:].transpose(1, 2), labels.transpose(1, 2))
+        x_combined = x_combined[:,:labels.shape[1],:]
+        loss = F.binary_cross_entropy(x_combined.transposed(1, 2), labels.transposed(1, 2))
 
         return loss, x_combined
