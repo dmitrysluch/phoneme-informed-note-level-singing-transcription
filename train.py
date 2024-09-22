@@ -155,7 +155,7 @@ class SignalSampler:
         label_chunks: list[np.ndarray] = []
         duration_frames_remaining = self.crop_size_frames
         while duration_frames_remaining > 0:
-            audio, label = self._sample_from_single_file(min(duration_frames_remaining, ))
+            audio, label = self._sample_from_single_file(min(duration_frames_remaining, self.piece_size_frames))
             if self.min_rms_db is not None:
                 chunk_rms_db = eval_rms_db(audio)
                 if chunk_rms_db < self.min_rms_db:
