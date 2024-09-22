@@ -212,7 +212,7 @@ def train(model_file, train, eval, run, device):
     model.combined_fc = nn.Linear(model_size, OUTPUT_FEATURES)
 
     traind = SignalSampler(config, AudioDataset(config, "train", "labels/train"), len=32)
-    evald = SignalSampler(config, AudioDataset(config, "test", "labels/test"), len=32)
+    evald = SignalSampler(config, AudioDataset(config, "test", "labels/train"), len=32)
 
     ta = transformers.TrainingArguments(output_dir="out", per_device_train_batch_size=32, per_device_eval_batch_size=32, num_train_epochs=100, evaluation_strategy="epoch", report_to="wandb")
     trainer = transformers.Trainer(model, args=ta, train_dataset=traind, eval_dataset=evald, compute_metrics=compute_metrics)
