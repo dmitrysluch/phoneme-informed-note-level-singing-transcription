@@ -210,10 +210,10 @@ def train(model_file, train, eval, run, device):
     model_size = model.combined_fc.in_features
     model.combined_fc = nn.Linear(model_size, OUTPUT_FEATURES)
 
-    traind = SignalSampler(config, AudioDataset(config, "train", "labels/train"), len=2**13)
-    evald = SignalSampler(config, AudioDataset(config, "test", "labels/train"), len=32)
+    traind = SignalSampler(config, AudioDataset(config, "train", "labels/train"), len=8)
+    evald = SignalSampler(config, AudioDataset(config, "test", "labels/train"), len=8)
 
-    ta = transformers.TrainingArguments(output_dir="out", per_device_train_batch_size=64, per_device_eval_batch_size=32, num_train_epochs=100, evaluation_strategy="epoch", report_to="wandb")
+    ta = transformers.TrainingArguments(output_dir="out", per_device_train_batch_size=8, per_device_eval_batch_size=8, num_train_epochs=100, evaluation_strategy="epoch", report_to="wandb")
     trainer = transformers.Trainer(model, args=ta, train_dataset=traind, eval_dataset=evald, compute_metrics=compute_metrics)
     trainer.add_callback(S3Callback())
     trainer.train()

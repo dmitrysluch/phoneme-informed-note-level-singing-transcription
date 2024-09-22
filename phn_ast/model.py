@@ -13,6 +13,8 @@ class TranscriptionModel(nn.Module):
         self.pitch_input_features = config['n_mels']
 
         self.lang_model = PhonemeRecognitionModel(config['lang_model_config'])
+        for p in self.lang_model.parameters():
+            p.requires_grad = False
 
         self.lang_input_features = config['lang_model_config']['num_lbl'] - 1
         self.output_features = 3
@@ -40,8 +42,8 @@ class TranscriptionModel(nn.Module):
 
         return pitch_conv_stack, lang_conv_stack, pitch_rnn, lang_rnn, combined_rnn, combined_fc
 
-    def forward(self, x, labels):
-        pitch_feature = self.pitch_feat_ext(x).transpose(1, 2).unsqueeze(1)
+    def forward(self, x, labels): # batch x n_mels x length
+        pitch_feature = self.pitch_feat_ext(x).transpose(1, 2).unsqueeze(1) # batch x chan x length x n_mels
 
         lang_batch = self.lang_model.run_on_batch({'audio': x})
         lang_feature = lang_batch['frame'].unsqueeze(1)
@@ -52,8 +54,12 @@ class TranscriptionModel(nn.Module):
         x_pitch = self.pitch_conv_stack(pitch_feature)
         x_pitch_rnn = self.pitch_rnn(x_pitch)
 
+        print(x_pitch.shape, x_pitch_rnn.shape)
+
         x_combined = self.combined_rnn(torch.cat([x_pitch_rnn, x_lang_rnn], dim=2))
-        x_combined = self.combined_fc(x_combined)
+        x_combined = self.combined_fc(x_combined) # batch x n_frames x n_notes
+
+        print(x_combined.shape, labels.shape)
 
         if labels is not None:
             x_combined = x_combined[:,:labels.shape[1],:]

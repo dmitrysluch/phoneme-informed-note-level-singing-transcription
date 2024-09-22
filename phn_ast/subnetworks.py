@@ -68,8 +68,8 @@ class DilatedConvStack(nn.Module):
         )
 
     def forward(self, data):
-        x = self.cnn(data)
-        x = x.transpose(1, 2).flatten(-2)
+        x = self.cnn(data) # batch_size x channels x frames x input_features
+        x = x.transpose(1, 2).flatten(-2) # batch_size x frames x (channels * input_features)
         x = self.fc(x)
         return x
 
