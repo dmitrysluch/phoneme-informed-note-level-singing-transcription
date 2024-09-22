@@ -5,6 +5,7 @@ import librosa
 import torchaudio
 import torch.nn as nn
 from torch.utils.data.dataset import Dataset
+from sklearn.metrics import precision_score, recall_score
 
 from phn_ast.midi import save_midi
 from phn_ast.decoding import FramewiseDecoder
@@ -176,6 +177,28 @@ class S3Callback(transformers.TrainerCallback):
         torch.save(model, model_path)
         run(["aws", "s3", "cp", model_path, "s3://chp"])
 
+def compute_metrics(eval_prediction):
+    print("Compute metrics", eval_prediction.predictions.shape, eval_prediction.label_ids.shape)
+    preds = eval_prediction.predictions.detach().cpu().numpy()
+    preds = (preds > 0.5)
+    labels = eval_prediction.label_ids.detach().cpu().numpy()
+    labels = (labels > 0.9999)
+    onset_precision = precision_score(labels[...,::3].reshape(-1), preds[...,::3].reshape(-1))
+    offset_precision = precision_score(labels[...,1::3].reshape(-1), preds[...,1::3].reshape(-1))
+    frame_precision = precision_score(labels[...,2::3].reshape(-1), preds[...,2::3].reshape(-1))
+    onset_recall = recall_score(labels[...,::3].reshape(-1), preds[...,::3].reshape(-1))
+    offset_recall = recall_score(labels[...,1::3].reshape(-1), preds[...,1::3].reshape(-1))
+    frame_recall = recall_score(labels[...,2::3].reshape(-1), preds[...,2::3].reshape(-1))
+
+    return dict(
+        onset_precision=onset_precision,
+        offset_precision=offset_precision,
+        frame_precision=frame_precision,
+        onset_recall=onset_recall,
+        offset_recall=offset_recall,
+        frame_recall=frame_recall
+    )
+
 def train(model_file, train, eval, run, device):
     ckpt = torch.load(model_file)
     config = ckpt['config']
@@ -188,11 +211,12 @@ def train(model_file, train, eval, run, device):
     model_size = model.combined_fc.in_features
     model.combined_fc = nn.Linear(model_size, OUTPUT_FEATURES)
 
-    traind = SignalSampler(config, AudioDataset(config, "train", "labels/train"), len=512)
+    traind = SignalSampler(config, AudioDataset(config, "train", "labels/train"), len=32)
     evald = SignalSampler(config, AudioDataset(config, "test", "labels/test"), len=128)
 
-    ta = transformers.TrainingArguments(output_dir="out", per_device_train_batch_size=32, per_device_eval_batch_size=32, num_train_epochs=100)
-    trainer = transformers.Trainer(model, args=ta, train_dataset=traind, eval_dataset=evald, callbacks=[S3Callback()])
+    ta = transformers.TrainingArguments(output_dir="out", per_device_train_batch_size=32, per_device_eval_batch_size=32, num_train_epochs=100, report_to="wandb")
+    trainer = transformers.Trainer(model, args=ta, train_dataset=traind, eval_dataset=evald, compute_metrics=compute_metrics)
+    trainer.add_callback(S3Callback())
     trainer.train()
 
 

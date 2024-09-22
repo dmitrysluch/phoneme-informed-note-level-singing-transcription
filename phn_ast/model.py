@@ -62,4 +62,4 @@ class TranscriptionModel(nn.Module):
         else:
             loss = None
 
-        return loss, x_combined
+        return loss, x_combined, labels
