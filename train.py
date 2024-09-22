@@ -178,7 +178,6 @@ class S3Callback(transformers.TrainerCallback):
         run(["aws", "s3", "cp", model_path, "s3://chp"])
 
 def compute_metrics(eval_prediction):
-    print("Compute metrics", eval_prediction.predictions, eval_prediction.label_ids)
     preds = eval_prediction.predictions[0]
     preds = (preds > 0.5)
     labels = eval_prediction.predictions[1]
