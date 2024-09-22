@@ -68,6 +68,7 @@ class TranscriptionModel(nn.Module):
         x_combined = self.combined_fc(x_combined) # batch x n_frames x n_notes
 
         print(x_combined.shape, labels.shape)
+        print(torch.sigmoid(x_combined).max())
 
         if labels is not None:
             x_combined = x_combined[:,:labels.shape[1],:]
