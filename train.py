@@ -182,6 +182,7 @@ def compute_metrics(eval_prediction):
     preds = (preds > 0.5)
     labels = eval_prediction.predictions[1]
     labels = (labels > 0.9999)
+    
     onset_precision = precision_score(labels[...,::3].reshape(-1), preds[...,::3].reshape(-1))
     offset_precision = precision_score(labels[...,1::3].reshape(-1), preds[...,1::3].reshape(-1))
     frame_precision = precision_score(labels[...,2::3].reshape(-1), preds[...,2::3].reshape(-1))
@@ -204,17 +205,17 @@ def train(model_file, train, eval, run, device):
     model_state_dict = ckpt['model_state_dict']
 
     model = TranscriptionModel(config)
-    model.load_state_dict(model_state_dict)
+    # model.load_state_dict(model_state_dict)
     model.to(device)
     
     model_size = model.combined_fc.in_features
     model.combined_fc = nn.Linear(model_size, OUTPUT_FEATURES)
-
-    for p in model.parameters():
-        p.requires_grad=False
+    model.load_state_dict(torch.load("/run/model2.0.pt"))
+    # for p in model.parameters():
+    #     p.requires_grad=False
     
-    for p in model.combined_fc.parameters():
-        p.requires_grad = True
+    # for p in model.combined_fc.parameters():
+    #     p.requires_grad = True
 
     traind = SignalSampler(config, AudioDataset(config, "train", "labels/train"), len=2**13)
     evald = SignalSampler(config, AudioDataset(config, "test", "labels/train"), len=32)
