@@ -46,9 +46,10 @@ def infer(initial_model, model_file, input_file, output_file, pitch_sum, bpm, de
     with torch.no_grad():
         pred = model(audio_re, None)[1]
         # p, i = decoder.decode(pred, audio=audio_re)
-
-    plt.pcolor(pred.detach().cpu().numpy()[0,1000:2000])
-    plt.savefig("inferred.png")
+ 
+    torch.save(pred.detach().cpu())
+    # plt.pcolor(pred.detach().cpu().numpy()[0,1000:2000])
+    # plt.savefig("inferred.png")
 
     # scale_factor = config['hop_length'] / config['sample_rate']
 
