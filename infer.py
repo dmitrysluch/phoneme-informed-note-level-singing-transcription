@@ -15,17 +15,18 @@ MIN_MIDI = 21
 MAX_MIDI = 108
 OUTPUT_FEATURES = 3 * (MAX_MIDI - MIN_MIDI + 1)
 
-def infer(model_file, input_file, output_file, pitch_sum, bpm, device):
-    ckpt = torch.load(model_file)
+def infer(initial_model, model_file, input_file, output_file, pitch_sum, bpm, device):
+    ckpt = torch.load(initial_model)
     config = ckpt['config']
-    model_state_dict = ckpt['model_state_dict']
+    # model_state_dict = ckpt['model_state_dict']
 
-    model = TranscriptionModel(config)
+    # model = TranscriptionModel(config)
 
-    model_size = model.combined_fc.in_features
-    model.combined_fc = nn.Linear(model_size, OUTPUT_FEATURES)
+    # model_size = model.combined_fc.in_features
+    # model.combined_fc = nn.Linear(model_size, OUTPUT_FEATURES)
 
-    model.load_state_dict(model_state_dict)
+    # model.load_state_dict(model_state_dict)
+    model = torch.load(model_file)
     model.to(device)
 
     model.to(device)
@@ -59,6 +60,7 @@ def infer(model_file, input_file, output_file, pitch_sum, bpm, device):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
+    parser.add_argument('initial_model', type=str)
     parser.add_argument('model_file', type=str)
     parser.add_argument('input_file', type=str)
     parser.add_argument('output_file', nargs='?', default='out.mid', type=str)
@@ -69,4 +71,4 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    infer(args.model_file, args.input_file, args.output_file, args.pitch_sum, args.bpm, args.device)
+    infer(args.initial_model, args.model_file, args.input_file, args.output_file, args.pitch_sum, args.bpm, args.device)
