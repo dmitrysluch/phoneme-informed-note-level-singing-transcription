@@ -66,9 +66,9 @@ class TranscriptionModel(nn.Module):
             x_combined = x_combined[:,:labels.shape[1],:]
             labels = labels.clamp(0.0, 1.0)
             plt.pcolor(labels[0].detach().cpu().numpy())
-            plt.save(f"labels{cnt}.png")
+            plt.savefig(f"labels{cnt}.png")
             plt.pcolor(x_combined[0].detach().cpu().numpy())
-            plt.save(f"labels{cnt}.png")
+            plt.savefig(f"labels{cnt}.png")
             cnt += 1
             loss = F.binary_cross_entropy_with_logits(x_combined.view(-1), labels.view(-1))
         else:
