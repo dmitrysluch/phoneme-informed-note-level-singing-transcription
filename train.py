@@ -179,9 +179,9 @@ class S3Callback(transformers.TrainerCallback):
 
 def compute_metrics(eval_prediction):
     print("Compute metrics", eval_prediction.predictions, eval_prediction.label_ids)
-    preds = eval_prediction.predictions.detach().cpu().numpy()
+    preds = eval_prediction.predictions[0].detach().cpu().numpy()
     preds = (preds > 0.5)
-    labels = eval_prediction.label_ids.detach().cpu().numpy()
+    labels = eval_prediction.predictions[1].detach().cpu().numpy()
     labels = (labels > 0.9999)
     onset_precision = precision_score(labels[...,::3].reshape(-1), preds[...,::3].reshape(-1))
     offset_precision = precision_score(labels[...,1::3].reshape(-1), preds[...,1::3].reshape(-1))
