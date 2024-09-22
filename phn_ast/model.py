@@ -74,5 +74,7 @@ class TranscriptionModel(nn.Module):
             loss = F.binary_cross_entropy_with_logits(x_combined.reshape(-1), labels.reshape(-1))
         else:
             loss = None
+        
+        print(loss)
 
         return loss, x_combined, labels
