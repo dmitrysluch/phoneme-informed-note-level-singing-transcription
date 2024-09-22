@@ -47,6 +47,7 @@ class TranscriptionModel(nn.Module):
     def forward(self, x, labels): # batch x n_mels x length
         pitch_feature = self.pitch_feat_ext(x).transpose(1, 2).unsqueeze(1) # batch x chan x length x n_mels
 
+        print(pitch_feature.shape)
         plt.pcolor(pitch_feature[0,0,:,:].detach().cpu().numpy())
         plt.savefig(f"feats{self.cnt}.png")
 
