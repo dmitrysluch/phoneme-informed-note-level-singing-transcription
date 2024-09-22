@@ -35,8 +35,8 @@ class TranscriptionModel(nn.Module):
 
         pitch_rnn = BiLSTM(model_size, model_size // 2)
         lang_rnn = BiLSTM(model_size, model_size // 2)
-        combined_rnn = BiLSTM(model_size * 2, model_size // 2)
-        combined_fc = nn.Linear(model_size, output_features)
+        combined_rnn = BiLSTM(model_size * 2, model_size // 2) # batch x length x model_size
+        combined_fc = nn.Linear(model_size, output_features) # batch x length x features
 
         return pitch_conv_stack, lang_conv_stack, pitch_rnn, lang_rnn, combined_rnn, combined_fc
 
