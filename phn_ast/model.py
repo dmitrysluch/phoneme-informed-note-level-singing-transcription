@@ -6,7 +6,7 @@ from .phonerec_model import PhonemeRecognitionModel
 import torch.nn.functional as F
 import matplotlib.pyplot as plt
 
-cnt = 0
+
 class TranscriptionModel(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -28,6 +28,7 @@ class TranscriptionModel(nn.Module):
         self.win_length = config['win_length']
         self.hop_length = config['hop_length']
         self.pitch_sum = config['pitch_sum']
+        self.cnt = 0
 
     def _create_model(self, pitch_input_features, lang_input_features, output_features, config):
         model_complexity = config['model_complexity']
@@ -66,9 +67,9 @@ class TranscriptionModel(nn.Module):
             x_combined = x_combined[:,:labels.shape[1],:]
             labels = labels.clamp(0.0, 1.0)
             plt.pcolor(labels[0].detach().cpu().numpy())
-            plt.savefig(f"labels{cnt}.png")
+            plt.savefig(f"labels{self.cnt}.png")
             plt.pcolor(x_combined[0].detach().cpu().numpy())
-            plt.savefig(f"labels{cnt}.png")
+            plt.savefig(f"labels{self.cnt}.png")
             cnt += 1
             loss = F.binary_cross_entropy_with_logits(x_combined.view(-1), labels.view(-1))
         else:
