@@ -94,7 +94,6 @@ class SignalSampler:
         dataset,
         len=None,
         crop_size_sec: float = 5.0,
-        piece_size_sec: float = 5.0,
         min_rms_db: float | None = -38,
     ) -> None:
         """
@@ -106,7 +105,6 @@ class SignalSampler:
         self.config = config
         self.dataset = dataset
         self.crop_size_frames = int(crop_size_sec * self.config['sample_rate'] / self.config['hop_length'])
-        self.piece_size_frames = int(piece_size_sec * self.config['sample_rate'] / self.config['hop_length'])
         self.min_rms_db = min_rms_db
         self.sr = self.config['sample_rate']
         self.len = len
@@ -155,7 +153,7 @@ class SignalSampler:
         label_chunks: list[np.ndarray] = []
         duration_frames_remaining = self.crop_size_frames
         while duration_frames_remaining > 0:
-            audio, label = self._sample_from_single_file(min(duration_frames_remaining, self.piece_size_frames))
+            audio, label = self._sample_from_single_file(duration_frames_remaining)
             if self.min_rms_db is not None:
                 chunk_rms_db = eval_rms_db(audio)
                 if chunk_rms_db < self.min_rms_db:
@@ -206,14 +204,20 @@ def train(model_file, train, eval, run, device):
     model_state_dict = ckpt['model_state_dict']
 
     model = TranscriptionModel(config)
-    # model.load_state_dict(model_state_dict)
+    model.load_state_dict(model_state_dict)
     model.to(device)
-
+    
     model_size = model.combined_fc.in_features
     model.combined_fc = nn.Linear(model_size, OUTPUT_FEATURES)
 
-    traind = SignalSampler(config, AudioDataset(config, "train", "labels/train"), len=8, crop_size_sec=50)
-    evald = SignalSampler(config, AudioDataset(config, "test", "labels/train"), len=8, crop_size_sec=50)
+    for p in model.parameters():
+        p.requires_grad=False
+    
+    for p in model.combined_fc.parameters():
+        p.requires_grad = True
+
+    traind = SignalSampler(config, AudioDataset(config, "train", "labels/train"), len=8)
+    evald = SignalSampler(config, AudioDataset(config, "test", "labels/train"), len=8)
 
     ta = transformers.TrainingArguments(output_dir="out", per_device_train_batch_size=8, per_device_eval_batch_size=8, num_train_epochs=100, report_to="wandb") # evaluation_strategy="epoch"
     trainer = transformers.Trainer(model, args=ta, train_dataset=traind, eval_dataset=evald, compute_metrics=compute_metrics)
