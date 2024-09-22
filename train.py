@@ -178,7 +178,7 @@ class S3Callback(transformers.TrainerCallback):
         run(["aws", "s3", "cp", model_path, "s3://chp"])
 
 def compute_metrics(eval_prediction):
-    print("Compute metrics", eval_prediction.predictions.shape, eval_prediction.label_ids.shape)
+    print("Compute metrics", eval_prediction.predictions, eval_prediction.label_ids)
     preds = eval_prediction.predictions.detach().cpu().numpy()
     preds = (preds > 0.5)
     labels = eval_prediction.label_ids.detach().cpu().numpy()
@@ -215,7 +215,7 @@ def train(model_file, train, eval, run, device):
     evald = SignalSampler(config, AudioDataset(config, "test", "labels/train"), len=32)
 
     ta = transformers.TrainingArguments(output_dir="out", per_device_train_batch_size=32, per_device_eval_batch_size=32, num_train_epochs=100, evaluation_strategy="epoch", report_to="wandb")
-    trainer = transformers.Trainer(model, args=ta, train_dataset=traind, eval_dataset=evald, compute_metrics=compute_metrics)
+    trainer = transformers.Trainer(model, args=ta, train_dataset=traind, eval_dataset=traind, compute_metrics=compute_metrics)
     trainer.add_callback(S3Callback())
     trainer.train()
 
