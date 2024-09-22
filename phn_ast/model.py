@@ -28,7 +28,7 @@ class TranscriptionModel(nn.Module):
         self.win_length = config['win_length']
         self.hop_length = config['hop_length']
         self.pitch_sum = config['pitch_sum']
-        self.cnt = 0
+        # self.cnt = 0
 
     def _create_model(self, pitch_input_features, lang_input_features, output_features, config):
         model_complexity = config['model_complexity']
@@ -47,10 +47,10 @@ class TranscriptionModel(nn.Module):
     def forward(self, x, labels): # batch x n_mels x length
         pitch_feature = self.pitch_feat_ext(x).transpose(1, 2).unsqueeze(1) # batch x chan x length x n_mels
 
-        print(pitch_feature.shape)
-        plt.pcolor(pitch_feature[0,0,:,:].detach().cpu().numpy())
-        plt.savefig(f"feats{self.cnt}.png")
-        plt.clf()
+        # print(pitch_feature.shape)
+        # plt.pcolor(pitch_feature[0,0,:,:].detach().cpu().numpy())
+        # plt.savefig(f"feats{self.cnt}.png")
+        # plt.clf()
 
 
         lang_batch = self.lang_model.run_on_batch({'audio': x})
@@ -62,28 +62,28 @@ class TranscriptionModel(nn.Module):
         x_pitch = self.pitch_conv_stack(pitch_feature)
         x_pitch_rnn = self.pitch_rnn(x_pitch)
 
-        print(x_pitch.shape, x_pitch_rnn.shape)
+        # print(x_pitch.shape, x_pitch_rnn.shape)
 
         x_combined = self.combined_rnn(torch.cat([x_pitch_rnn, x_lang_rnn], dim=2))
         x_combined = self.combined_fc(x_combined) # batch x n_frames x n_notes
 
-        print(x_combined.shape, labels.shape)
-        print(torch.sigmoid(x_combined).max())
+        # print(x_combined.shape, labels.shape)
+        # print(torch.sigmoid(x_combined).max())
 
         if labels is not None:
             x_combined = x_combined[:,:labels.shape[1],:]
             labels = labels.clamp(0.0, 1.0)
-            plt.pcolor(labels[0].detach().cpu().numpy())
-            plt.savefig(f"labels{self.cnt}.png")
-            plt.clf()
-            plt.pcolor(x_combined[0].detach().cpu().numpy())
-            plt.savefig(f"preds{self.cnt}.png")
-            plt.clf()
-            self.cnt += 1
+            # plt.pcolor(labels[0].detach().cpu().numpy())
+            # plt.savefig(f"labels{self.cnt}.png")
+            # plt.clf()
+            # plt.pcolor(x_combined[0].detach().cpu().numpy())
+            # plt.savefig(f"preds{self.cnt}.png")
+            # plt.clf()
+            # self.cnt += 1
             loss = F.binary_cross_entropy_with_logits(x_combined.reshape(-1), labels.reshape(-1))
         else:
             loss = None
         
-        print(loss)
+        # print(loss)
 
         return loss, x_combined, labels
