@@ -50,6 +50,8 @@ class TranscriptionModel(nn.Module):
         print(pitch_feature.shape)
         plt.pcolor(pitch_feature[0,0,:,:].detach().cpu().numpy())
         plt.savefig(f"feats{self.cnt}.png")
+        plt.clf()
+
 
         lang_batch = self.lang_model.run_on_batch({'audio': x})
         lang_feature = lang_batch['frame'].unsqueeze(1)
@@ -72,8 +74,10 @@ class TranscriptionModel(nn.Module):
             labels = labels.clamp(0.0, 1.0)
             plt.pcolor(labels[0].detach().cpu().numpy())
             plt.savefig(f"labels{self.cnt}.png")
+            plt.clf()
             plt.pcolor(x_combined[0].detach().cpu().numpy())
             plt.savefig(f"preds{self.cnt}.png")
+            plt.clf()
             self.cnt += 1
             loss = F.binary_cross_entropy_with_logits(x_combined.reshape(-1), labels.reshape(-1))
         else:
