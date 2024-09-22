@@ -56,7 +56,11 @@ class TranscriptionModel(nn.Module):
         x_combined = self.combined_fc(x_combined)
 
         x_combined = x_combined[:,:labels.shape[1],:]
-        labels = labels.clamp(0.0, 1.0)
-        loss = F.binary_cross_entropy_with_logits(x_combined, labels)
+
+        if labels is not None:
+            labels = labels.clamp(0.0, 1.0)
+            loss = F.binary_cross_entropy_with_logits(x_combined, labels)
+        else:
+            loss = None
 
         return loss, x_combined
