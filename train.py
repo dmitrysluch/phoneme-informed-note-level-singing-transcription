@@ -179,7 +179,6 @@ class S3Callback(transformers.TrainerCallback):
 
 def compute_metrics(eval_prediction):
     preds = eval_prediction.predictions[0]
-    preds = torch.sigmoid(preds)
     preds = (preds > 0.5)
     labels = eval_prediction.predictions[1]
     labels = (labels > 0.9999)
