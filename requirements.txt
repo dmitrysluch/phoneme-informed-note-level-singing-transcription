@@ -7,3 +7,4 @@ librosa==0.9.1
 numpy==1.23.4
 wquantiles==0.6
 scikit-learn
+wandb

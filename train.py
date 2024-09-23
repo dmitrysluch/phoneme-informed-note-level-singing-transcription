@@ -223,12 +223,12 @@ def train(model_file, train, eval, run, device):
     # for p in model.combined_fc.parameters():
     #     p.requires_grad = True
 
-    traind = SignalSampler(config, AudioDataset(config, "train", "labels/train"), len=8)#2**13)
-    evald = SignalSampler(config, AudioDataset(config, "test", "labels/train"), len=8)
+    traind = SignalSampler(config, AudioDataset(config, "train", "labels/train"), len=2**13)
+    evald = SignalSampler(config, AudioDataset(config, "test", "labels/train"), len=32)
 
-    ta = transformers.TrainingArguments(output_dir="out", evaluation_strategy="epoch", per_device_train_batch_size=8, per_device_eval_batch_size=8, num_train_epochs=100, report_to="wandb")
+    ta = transformers.TrainingArguments(output_dir="out", evaluation_strategy="epoch", per_device_train_batch_size=64, per_device_eval_batch_size=32, num_train_epochs=100, report_to="wandb")
     trainer = transformers.Trainer(model, args=ta, train_dataset=traind, eval_dataset=evald, compute_metrics=compute_metrics)
-    # trainer.add_callback(S3Callback())
+    trainer.add_callback(S3Callback())
     trainer.train()
 
 
