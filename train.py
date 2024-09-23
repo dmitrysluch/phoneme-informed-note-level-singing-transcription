@@ -38,19 +38,25 @@ class AudioDataset(Dataset):
         # onset, offset, note, velocity, instrument
         labels = np.loadtxt(os.path.join(labels, f"{file}.tsv"), delimiter='\t', skiprows=1)
         labels[:,2] += shift
-        matrix = np.zeros((length, OUTPUT_FEATURES), dtype=np.float32)
+        # matrix = np.zeros((length, OUTPUT_FEATURES), dtype=np.float32)
+        matrix = np.zeros((length, 3), dtype=np.float32)
         for on, off, note, _, _ in labels:
             nt = int(note)
-            if nt >= MIN_MIDI and nt <= MAX_MIDI:
-               oni = int(on * self.config['sample_rate'] / self.config['hop_length'])
-               offi = int(off * self.config['sample_rate'] / self.config['hop_length'])
-               matrix[oni, (nt - MIN_MIDI) * 3] = 1
-               matrix[offi, (nt - MIN_MIDI) * 3 + 1] = 1
-               matrix[oni:offi,(nt - MIN_MIDI) * 3 + 2] = 1
+            if True:#nt >= MIN_MIDI and nt <= MAX_MIDI:
+                oni = int(on * self.config['sample_rate'] / self.config['hop_length'])
+                offi = int(off * self.config['sample_rate'] / self.config['hop_length'])
+            #    matrix[oni, (nt - MIN_MIDI) * 3] = 1
+            #    matrix[offi, (nt - MIN_MIDI) * 3 + 1] = 1
+            #    matrix[oni:offi,(nt - MIN_MIDI) * 3 + 2] = 1
+                matrix[oni, 0] = 1
+                matrix[offi, 1] = 1
+                matrix[oni:offi,2] = 1
         win = np.array([0.2, 0.6, 1, 0.6, 0.2])
-        for note in range(0, matrix.shape[1] // 3):
-            matrix[:,note * 3] = np.convolve(matrix[:,note * 3], win, mode='same')
-            matrix[:,note * 3 + 1] = np.convolve(matrix[:,note * 3 + 1], win, mode='same')
+        # for note in range(0, matrix.shape[1] // 3):
+        #     matrix[:,note * 3] = np.convolve(matrix[:,note * 3], win, mode='same')
+        #     matrix[:,note * 3 + 1] = np.convolve(matrix[:,note * 3 + 1], win, mode='same')
+        matrix[:,0] = np.convolve(matrix[:,0], win, mode='same')
+        matrix[:,1] = np.convolve(matrix[:,1], win, mode='same')
         return matrix
 
     def __len__(self):
@@ -205,24 +211,24 @@ def train(model_file, train, eval, run, device):
     model_state_dict = ckpt['model_state_dict']
 
     model = TranscriptionModel(config)
-    # model.load_state_dict(model_state_dict)
+    model.load_state_dict(model_state_dict)
     model.to(device)
     
     model_size = model.combined_fc.in_features
-    model.combined_fc = nn.Linear(model_size, OUTPUT_FEATURES)
-    model.load_state_dict(torch.load("run/model2.0.pt"))
+    # model.combined_fc = nn.Linear(model_size, OUTPUT_FEATURES)
+    # model.load_state_dict(torch.load("run/model2.0.pt"))
     # for p in model.parameters():
     #     p.requires_grad=False
     
     # for p in model.combined_fc.parameters():
     #     p.requires_grad = True
 
-    traind = SignalSampler(config, AudioDataset(config, "train", "labels/train"), len=2**13)
-    evald = SignalSampler(config, AudioDataset(config, "test", "labels/train"), len=32)
+    traind = SignalSampler(config, AudioDataset(config, "train", "labels/train"), len=8)#2**13)
+    evald = SignalSampler(config, AudioDataset(config, "test", "labels/train"), len=8)
 
-    ta = transformers.TrainingArguments(output_dir="out", evaluation_strategy="epoch", per_device_train_batch_size=64, per_device_eval_batch_size=32, num_train_epochs=100, report_to="wandb")
+    ta = transformers.TrainingArguments(output_dir="out", evaluation_strategy="epoch", per_device_train_batch_size=8, per_device_eval_batch_size=8, num_train_epochs=100, report_to="wandb")
     trainer = transformers.Trainer(model, args=ta, train_dataset=traind, eval_dataset=evald, compute_metrics=compute_metrics)
-    trainer.add_callback(S3Callback())
+    # trainer.add_callback(S3Callback())
     trainer.train()
 
 
