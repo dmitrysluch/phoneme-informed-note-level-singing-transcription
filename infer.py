@@ -18,15 +18,15 @@ OUTPUT_FEATURES = 3 * (MAX_MIDI - MIN_MIDI + 1)
 def infer(initial_model, model_file, input_file, output_file, pitch_sum, bpm, device):
     ckpt = torch.load(initial_model)
     config = ckpt['config']
-    # model_state_dict = ckpt['model_state_dict']
+    model_state_dict = ckpt['model_state_dict']
 
-    # model = TranscriptionModel(config)
+    model = TranscriptionModel(config)
 
-    # model_size = model.combined_fc.in_features
-    # model.combined_fc = nn.Linear(model_size, OUTPUT_FEATURES)
+    model_size = model.combined_fc.in_features
+    model.combined_fc = nn.Linear(model_size, OUTPUT_FEATURES)
 
-    # model.load_state_dict(model_state_dict)
-    model = torch.load(model_file)
+    model.load_state_dict(model_state_dict)
+    # model = torch.load(model_file)
     model.to(device)
 
     model.to(device)
@@ -45,18 +45,18 @@ def infer(initial_model, model_file, input_file, output_file, pitch_sum, bpm, de
 
     with torch.no_grad():
         pred = model(audio_re, None)[1]
-        # p, i = decoder.decode(pred, audio=audio_re)
+        p, i = decoder.decode(pred, audio=audio_re)
  
     torch.save(pred.detach().cpu(), "pred.pt")
     # plt.pcolor(pred.detach().cpu().numpy()[0,1000:2000])
     # plt.savefig("inferred.png")
 
-    # scale_factor = config['hop_length'] / config['sample_rate']
+    scale_factor = config['hop_length'] / config['sample_rate']
 
-    # i = (np.array(i) * scale_factor).reshape(-1, 2)
-    # p = np.array([round(midi) for midi in p])
+    i = (np.array(i) * scale_factor).reshape(-1, 2)
+    p = np.array([round(midi) for midi in p])
 
-    # save_midi(output_file, p, i, bpm)
+    save_midi(output_file, p, i, bpm)
 
 
 if __name__ == '__main__':

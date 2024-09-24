@@ -212,8 +212,7 @@ def train(model_file, train, eval, run, device):
 
     model = TranscriptionModel(config)
     model.load_state_dict(model_state_dict)
-    model.to(device)
-    
+    ...
     model_size = model.combined_fc.in_features
     # model.combined_fc = nn.Linear(model_size, OUTPUT_FEATURES)
     # model.load_state_dict(torch.load("run/model2.0.pt"))
