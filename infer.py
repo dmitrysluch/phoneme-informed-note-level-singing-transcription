@@ -22,8 +22,8 @@ def infer(initial_model, model_file, input_file, output_file, pitch_sum, bpm, de
 
     model = TranscriptionModel(config)
 
-    model_size = model.combined_fc.in_features
-    model.combined_fc = nn.Linear(model_size, OUTPUT_FEATURES)
+    # model_size = model.combined_fc.in_features
+    # model.combined_fc = nn.Linear(model_size, OUTPUT_FEATURES)
 
     model.load_state_dict(model_state_dict)
     # model = torch.load(model_file)
