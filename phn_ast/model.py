@@ -86,4 +86,4 @@ class TranscriptionModel(nn.Module):
         
         # print(loss)
 
-        return loss, torch.sigmoid(x_combined), labels
+        return loss, x_combined, labels
