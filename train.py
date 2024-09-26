@@ -217,7 +217,7 @@ def make_compute_metrics(config):
         notes = eval_prediction.predictions[2]
         metrics = []
         for pred, a, n in zip(preds, audio, notes):
-            p, i = decoder.decode(pred, audio=a)
+            p, i = decoder.decode(torch.tensor(pred).unsqueeze(0), audio=torch.tensor(a))
             i = (np.array(i) * config['hop_length'] / config['sample_rate']).reshape(-1, 2)
             p = np.array([round(midi) for midi in p])
             end_nt = len(n)
@@ -226,7 +226,8 @@ def make_compute_metrics(config):
                     end_nt = j
                     break
             n = n[:end_nt]
-            metrics.append(mir_eval.transcription.evaluate(n[:,:2], n[:,3], i, p))
+            print(i, p)
+            metrics.append(mir_eval.transcription.evaluate(n[:,:2], n[:,2], i, p))
         avg_metrics = defaultdict(int)
         for b in metrics:
             for k, v in b.items():
