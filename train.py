@@ -234,7 +234,7 @@ def make_compute_metrics(config):
                 avg_metrics[k] += v
         for k in avg_metrics:
             avg_metrics[k] /= len(metrics)
-        return avg_metrics
+        return dict(avg_metrics)
     return compute_metrics
 
 #     onset_precision = precision_score(labels[...,::3].reshape(-1), preds[...,::3].reshape(-1))
