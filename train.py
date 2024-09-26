@@ -17,6 +17,8 @@ import matplotlib.pyplot as plt
 
 import transformers
 from subprocess import run
+import mir_eval
+from collections import defaultdict
 
 
 ONSET_SCALE_FACTOR = 5
@@ -57,7 +59,7 @@ class AudioDataset(Dataset):
         #     matrix[:,note * 3 + 1] = np.convolve(matrix[:,note * 3 + 1], win, mode='same')
         matrix[:,0] = np.convolve(matrix[:,0], win, mode='same')
         matrix[:,1] = np.convolve(matrix[:,1], win, mode='same')
-        return matrix
+        return matrix, labels[:,:3]
 
     def __len__(self):
         return len(self.paths)
@@ -67,8 +69,8 @@ class AudioDataset(Dataset):
         audio, sr = librosa.load(path, sr=self.config['sample_rate'])
         assert sr == self.config['sample_rate']
         fftlen = (audio.shape[0] + self.config['win_length']) // self.config['hop_length']
-        labels = self.get_labels(self.labels, path, fftlen)
-        return audio, labels
+        labels, notes = self.get_labels(self.labels, path, fftlen)
+        return audio, labels, notes
 
 def eval_mean_square(x: np.ndarray) -> float:
     """
@@ -101,6 +103,7 @@ class SignalSampler:
         len=None,
         crop_size_sec: float = 5.0,
         min_rms_db: float | None = -38,
+        det=False,
     ) -> None:
         """
         paths: list of absolute paths to the files we are going to sample from
@@ -114,6 +117,7 @@ class SignalSampler:
         self.min_rms_db = min_rms_db
         self.sr = self.config['sample_rate']
         self.len = len
+        self.det = det
 
     def _sample_from_single_file(
         self, crop_size_frames: int | None = None
@@ -124,15 +128,27 @@ class SignalSampler:
         """
         if crop_size_frames is None:
             crop_size_frames = self.crop_size_frames
-        audio, labels = self.dataset[random.randint(0, len(self.dataset) - 1)]
+        audio, labels, notes = self.dataset[random.randint(0, len(self.dataset) - 1)]
         file_duration_frames = len(labels)
         if file_duration_frames < crop_size_frames:
-            return audio, labels
+            return audio[:(labels.shape[0] - 1) * self.config["hop_length"]], labels[:-1], notes
         start = random.randint(0, file_duration_frames - crop_size_frames - 1)
         labels = labels[start:start+crop_size_frames]
         start_a, end_a = librosa.frames_to_samples([start, start+crop_size_frames], hop_length=self.config["hop_length"])
         audio = audio[start_a: end_a]
-        return audio, labels
+        start_t = start_a / self.config['sample_rate']
+        end_t = end_a / self.config['sample_rate']
+        start_note = None
+        end_note = None
+        for i, (on, off, _) in enumerate(notes):
+            if start_note is None and on >= start_t:
+                start_note = i
+            if off >= end_t:
+                end_note = i
+                break
+        notes = notes[start_note:end_note]
+        notes[:,:2] = notes[:,:2] - start_t
+        return audio, labels, notes
 
     def __len__(self) -> int:
         return len(self.dataset) * 60 if self.len is None else self.len
@@ -157,24 +173,34 @@ class SignalSampler:
         """
         audio_chunks: list[np.ndarray] = []
         label_chunks: list[np.ndarray] = []
+        note_chunks: list[np.ndarray] = []
         duration_frames_remaining = self.crop_size_frames
+        if self.det:
+            random.seed(index)
+        else:
+            random.seed()
         while duration_frames_remaining > 0:
-            audio, label = self._sample_from_single_file(duration_frames_remaining)
+            audio, label, notes = self._sample_from_single_file(duration_frames_remaining)
             if self.min_rms_db is not None:
                 chunk_rms_db = eval_rms_db(audio)
                 if chunk_rms_db < self.min_rms_db:
                     continue
+            assert len(audio) == len(label) * self.config["hop_length"]
             audio_chunks.append(audio)
             label_chunks.append(label)
+            note_chunks.append(notes)
             duration_frames_remaining -= label.shape[0]
         audio_res = np.concatenate(audio_chunks)
         label_res = np.concatenate(label_chunks)
+        note_res = np.concatenate(note_chunks)[:50]
+        note_res = np.pad(note_res, ((0, 50 - len(note_res)), (0, 0)), constant_values=-1)
 
         assert audio_res.ndim == 1, result.shape
         assert label_res.ndim == 2, result.shape
         assert label_res.shape[0] == self.crop_size_frames
 
-        return dict(x=audio_res, labels=label_res)
+        return dict(x=audio_res, labels=label_res, notes=note_res)
+
 
 class S3Callback(transformers.TrainerCallback):
     def on_epoch_end(self, args, state, control, **kwargs):
@@ -183,27 +209,48 @@ class S3Callback(transformers.TrainerCallback):
         torch.save(model.state_dict(), model_path)
         run(["aws", "s3", "cp", model_path, "s3://chp"])
 
-def compute_metrics(eval_prediction):
-    preds = eval_prediction.predictions[0]
-    preds = (preds > 0.5)
-    labels = eval_prediction.predictions[1]
-    labels = (labels > 0.9999)
-    
-    onset_precision = precision_score(labels[...,::3].reshape(-1), preds[...,::3].reshape(-1))
-    offset_precision = precision_score(labels[...,1::3].reshape(-1), preds[...,1::3].reshape(-1))
-    frame_precision = precision_score(labels[...,2::3].reshape(-1), preds[...,2::3].reshape(-1))
-    onset_recall = recall_score(labels[...,::3].reshape(-1), preds[...,::3].reshape(-1))
-    offset_recall = recall_score(labels[...,1::3].reshape(-1), preds[...,1::3].reshape(-1))
-    frame_recall = recall_score(labels[...,2::3].reshape(-1), preds[...,2::3].reshape(-1))
+def make_compute_metrics(config):
+    decoder = FramewiseDecoder(config)
+    def compute_metrics(eval_prediction):
+        preds = eval_prediction.predictions[0]
+        audio = eval_prediction.predictions[1]
+        notes = eval_prediction.predictions[2]
+        metrics = []
+        for pred, a, n in zip(preds, audio, notes):
+            p, i = decoder.decode(pred, audio=a)
+            i = (np.array(i) * config['hop_length'] / config['sample_rate']).reshape(-1, 2)
+            p = np.array([round(midi) for midi in p])
+            end_nt = len(n)
+            for j, (on, off, note) in enumerate(n):
+                if on == -1:
+                    end_nt = j
+                    break
+            n = n[:end_nt]
+            metrics.append(mir_eval.transcription.evaluate(n[:,:2], n[:,3], i, p))
+        avg_metrics = defaultdict(int)
+        for b in metrics:
+            for k, v in b.items():
+                avg_metrics[k] += v
+        for k in avg_metrics:
+            avg_metrics[k] /= len(metrics)
+        return avg_metrics
+    return compute_metrics
 
-    return dict(
-        onset_precision=onset_precision,
-        offset_precision=offset_precision,
-        frame_precision=frame_precision,
-        onset_recall=onset_recall,
-        offset_recall=offset_recall,
-        frame_recall=frame_recall
-    )
+#     onset_precision = precision_score(labels[...,::3].reshape(-1), preds[...,::3].reshape(-1))
+#     offset_precision = precision_score(labels[...,1::3].reshape(-1), preds[...,1::3].reshape(-1))
+#     frame_precision = precision_score(labels[...,2::3].reshape(-1), preds[...,2::3].reshape(-1))
+#     onset_recall = recall_score(labels[...,::3].reshape(-1), preds[...,::3].reshape(-1))
+#     offset_recall = recall_score(labels[...,1::3].reshape(-1), preds[...,1::3].reshape(-1))
+#     frame_recall = recall_score(labels[...,2::3].reshape(-1), preds[...,2::3].reshape(-1))
+
+#     return dict(
+#         onset_precision=onset_precision,
+#         offset_precision=offset_precision,
+#         frame_precision=frame_precision,
+#         onset_recall=onset_recall,
+#         offset_recall=offset_recall,
+#         frame_recall=frame_recall
+#     )
 
 def train(model_file, train, eval, run, device):
     ckpt = torch.load(model_file)
@@ -223,12 +270,14 @@ def train(model_file, train, eval, run, device):
     #     p.requires_grad = True
 
     traind = SignalSampler(config, AudioDataset(config, "train", "labels/train"), len=2**13)
-    evald = SignalSampler(config, AudioDataset(config, "test", "labels/train"), len=32)
+    evald = SignalSampler(config, AudioDataset(config, "test", "labels/train"), len=32, det=True)
 
     ta = transformers.TrainingArguments(output_dir="out", evaluation_strategy="epoch", per_device_train_batch_size=64, per_device_eval_batch_size=32, num_train_epochs=100, report_to="wandb")
-    trainer = transformers.Trainer(model, args=ta, train_dataset=traind, eval_dataset=evald, compute_metrics=compute_metrics)
+    trainer = transformers.Trainer(
+        model, args=ta, train_dataset=traind, eval_dataset=evald, compute_metrics=make_compute_metrics(config))
     trainer.add_callback(S3Callback())
-    trainer.train()
+    print(trainer.evaluate())
+    # trainer.train()
 
 
 if __name__ == '__main__':
