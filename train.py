@@ -226,7 +226,7 @@ def make_compute_metrics(config):
                     end_nt = j
                     break
             n = n[:end_nt]
-            print(i, p)
+            p = np.clip(p, 1, 127)
             metrics.append(mir_eval.transcription.evaluate(n[:,:2], n[:,2], i, p))
         avg_metrics = defaultdict(int)
         for b in metrics:
