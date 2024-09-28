@@ -71,7 +71,7 @@ class AudioDataset(Dataset):
                 oni = int(on * self.config['sample_rate'] / self.config['hop_length'])
                 offi = int(off * self.config['sample_rate'] / self.config['hop_length'])
                 if oni < 0 or offi < 0 or oni >= len(matrix) or offi >= len(matrix):
-                    print("WARN: note outside of label matrix range")
+                    print(f"WARN: note outside of label matrix range path: {path} oni: {oni}, offi: {offi} len(matrix): {len(matrix)}")
                     continue
             #    matrix[oni, (nt - MIN_MIDI) * 3] = 1
             #    matrix[offi, (nt - MIN_MIDI) * 3 + 1] = 1
@@ -182,7 +182,7 @@ class SignalSampler:
         audio, labels, notes = self.dataset[audio_idx, start, end]
         assert len(audio) == crop_size_ticks
         assert len(labels) == crop_size_frames
-        return audio, labels, notes
+        return audio.astype('float32'), labels.astype('float32'), notes.astype('float32')
 
     def __len__(self) -> int:
         return len(self.dataset) * 60 if self.len is None else self.len
