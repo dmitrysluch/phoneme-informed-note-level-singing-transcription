@@ -289,11 +289,11 @@ def train(model_file, train, eval, run, device):
     model_state_dict = ckpt['model_state_dict']
 
     model = TranscriptionModel(config)
-    model.load_state_dict(model_state_dict)
+    # model.load_state_dict(model_state_dict)
     ...
     model_size = model.combined_fc.in_features
     # model.combined_fc = nn.Linear(model_size, OUTPUT_FEATURES)
-    # model.load_state_dict(torch.load("run/model2.0.pt"))
+    model.load_state_dict(torch.load("run/model14.0.pt"))
     # for p in model.parameters():
     #     p.requires_grad=False
     
