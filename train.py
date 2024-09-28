@@ -227,7 +227,7 @@ class SignalSampler:
         assert notes.shape[0] == 50, notes.shape
         assert notes.shape[1] == 3, notes.shape
 
-        return dict(x=audio, labels=label, notes=notes)
+        return dict(x=audio.astype('float32'), labels=label.astype('float32'), notes=notes.astype('float32'))
 
 class S3Callback(transformers.TrainerCallback):
     def on_epoch_end(self, args, state, control, **kwargs):
