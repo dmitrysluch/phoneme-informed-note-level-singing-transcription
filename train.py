@@ -27,6 +27,14 @@ MIN_MIDI = 21
 MAX_MIDI = 108
 OUTPUT_FEATURES = 3 * (MAX_MIDI - MIN_MIDI + 1)
 
+import torch.nn as nn
+from torch.utils.data.dataset import Dataset
+
+import mir_eval
+from collections import defaultdict
+import soundfile as sf
+import resampy
+
 class AudioDataset(Dataset):
     def __init__(self, config, data, labels) -> None:
         super().__init__()
