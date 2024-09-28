@@ -5,7 +5,7 @@ import librosa
 import torchaudio
 import torch.nn as nn
 from torch.utils.data.dataset import Dataset
-from sklearn.metrics import precision_score, recall_score
+# from sklearn.metrics import precision_score, recall_score
 
 from phn_ast.midi import save_midi
 from phn_ast.decoding import FramewiseDecoder
@@ -19,7 +19,8 @@ import transformers
 from subprocess import run
 import mir_eval
 from collections import defaultdict
-
+import soundfile as sf
+import resampy
 
 ONSET_SCALE_FACTOR = 5
 MIN_MIDI = 21
@@ -34,19 +35,36 @@ class AudioDataset(Dataset):
         self.labels = labels
         self.paths = [os.path.join(root, file) for root, _, files in os.walk(data) for file in files]
 
-    def get_labels(self, labels, path, length) -> np.ndarray:
+    def get_labels(self, labels_path, path, length, start, end) -> np.ndarray:
         file, shift = os.path.split(path)[1].split("#")
         shift = int(shift.split(".")[0])
         # onset, offset, note, velocity, instrument
-        labels = np.loadtxt(os.path.join(labels, f"{file}.tsv"), delimiter='\t', skiprows=1)
-        labels[:,2] += shift
+        notes = np.loadtxt(os.path.join(labels_path, f"{file}.tsv"), delimiter='\t', skiprows=1)
+        notes[:,2] += shift
+
+        start_t = start / self.config['sample_rate']
+        end_t = end / self.config['sample_rate']
+        start_note = None
+        end_note = None
+        for i, (on, off, _) in enumerate(notes):
+            if start_note is None and on >= start_t:
+                start_note = i
+            if off >= end_t:
+                end_note = i
+                break
+        notes = notes[start_note:end_note]
+        notes[:,:2] = notes[:,:2] - start_t
+
         # matrix = np.zeros((length, OUTPUT_FEATURES), dtype=np.float32)
         matrix = np.zeros((length, 3), dtype=np.float32)
-        for on, off, note, _, _ in labels:
+        for on, off, note, _, _ in notes:
             nt = int(note)
             if True:#nt >= MIN_MIDI and nt <= MAX_MIDI:
                 oni = int(on * self.config['sample_rate'] / self.config['hop_length'])
                 offi = int(off * self.config['sample_rate'] / self.config['hop_length'])
+                if oni < 0 or offi < 0 or oni >= len(matrix) or offi >= len(matrix):
+                    print("WARN: note outside of label matrix range")
+                    continue
             #    matrix[oni, (nt - MIN_MIDI) * 3] = 1
             #    matrix[offi, (nt - MIN_MIDI) * 3 + 1] = 1
             #    matrix[oni:offi,(nt - MIN_MIDI) * 3 + 2] = 1
@@ -59,18 +77,31 @@ class AudioDataset(Dataset):
         #     matrix[:,note * 3 + 1] = np.convolve(matrix[:,note * 3 + 1], win, mode='same')
         matrix[:,0] = np.convolve(matrix[:,0], win, mode='same')
         matrix[:,1] = np.convolve(matrix[:,1], win, mode='same')
-        return matrix, labels[:,:3]
+        return matrix, notes[:,:3]
 
     def __len__(self):
         return len(self.paths)
 
-    def __getitem__(self, index):
+    def __getitem__(self, key):
+        index, start, end = key
         path = self.paths[index]
-        audio, sr = librosa.load(path, sr=self.config['sample_rate'])
-        assert sr == self.config['sample_rate']
-        fftlen = (audio.shape[0] + self.config['win_length']) // self.config['hop_length']
-        labels, notes = self.get_labels(self.labels, path, fftlen)
-        return audio, labels, notes
+        with sf.SoundFile(path) as f:
+            start_rs = start * f.samplerate // self.config['sample_rate']
+            end_rs = end * f.samplerate // self.config['sample_rate'] + 10
+            f.seek(start_rs)
+            data = librosa.to_mono(f.read(end_rs - start_rs).T)
+            if f.samplerate != self.config['sample_rate']:
+                data = resampy.resample(data, f.samplerate, self.config['sample_rate'])
+            data = data[:end - start]
+        fftlen = (data.shape[0] + self.config['win_length']) // self.config['hop_length']
+        labels, notes = self.get_labels(self.labels, path, fftlen, start, end)
+        return data, labels, notes
+    
+    def get_len(self, index):
+        path = self.paths[index]
+        with sf.SoundFile(path) as f:
+            f.seek(0, sf.SEEK_END)
+            return f.tell() * self.config['sample_rate'] // f.samplerate
 
 def eval_mean_square(x: np.ndarray) -> float:
     """
@@ -113,41 +144,36 @@ class SignalSampler:
         """
         self.config = config
         self.dataset = dataset
-        self.crop_size_frames = int(crop_size_sec * self.config['sample_rate'] / self.config['hop_length'])
+        self.crop_size_ticks = int(crop_size_sec * self.config['sample_rate'])
         self.min_rms_db = min_rms_db
         self.sr = self.config['sample_rate']
         self.len = len
         self.det = det
 
     def _sample_from_single_file(
-        self, crop_size_frames: int | None = None
+        self, crop_size_ticks: int | None = None
     ) -> np.ndarray:
         """
         Reads a random crop of size crop_size_frames from path.
         If the file is shorter, reads the full file.
         """
-        if crop_size_frames is None:
-            crop_size_frames = self.crop_size_frames
-        audio, labels, notes = self.dataset[random.randint(0, len(self.dataset) - 1)]
-        file_duration_frames = len(labels)
-        if file_duration_frames < crop_size_frames:
-            return audio[:(labels.shape[0] - 1) * self.config["hop_length"]], labels[:-1], notes
-        start = random.randint(0, file_duration_frames - crop_size_frames - 1)
-        labels = labels[start:start+crop_size_frames]
-        start_a, end_a = librosa.frames_to_samples([start, start+crop_size_frames], hop_length=self.config["hop_length"])
-        audio = audio[start_a: end_a]
-        start_t = start_a / self.config['sample_rate']
-        end_t = end_a / self.config['sample_rate']
-        start_note = None
-        end_note = None
-        for i, (on, off, _) in enumerate(notes):
-            if start_note is None and on >= start_t:
-                start_note = i
-            if off >= end_t:
-                end_note = i
-                break
-        notes = notes[start_note:end_note]
-        notes[:,:2] = notes[:,:2] - start_t
+        if crop_size_ticks is None:
+            crop_size_ticks = self.crop_size_ticks
+        crop_size_frames = (crop_size_ticks + self.config["win_length"]) / self.config["hop_length"]
+        audio_idx = random.randint(0, len(self.dataset) - 1)
+        file_len = self.dataset.get_len(audio_idx)
+        file_duration_frames = (file_len + self.config["win_length"]) / self.config["hop_length"]
+        if file_len < crop_size_ticks:
+            audio, labels, notes = self.dataset[audio_idx, 0, file_len]
+            assert len(audio) == file_len
+            assert len(labels) == file_duration_frames
+            audio = np.pad(audio, (0, file_len - audio.shape[0]))
+            labels = np.pad(labels, ((0, crop_size_frames - file_duration_frames), (0, 0)))
+        start = random.randint(0, file_len - crop_size_ticks)
+        end = start + crop_size_ticks
+        audio, labels, notes = self.dataset[audio_idx, start, end]
+        assert len(audio) == crop_size_ticks
+        assert len(labels) == crop_size_frames
         return audio, labels, notes
 
     def __len__(self) -> int:
@@ -171,35 +197,30 @@ class SignalSampler:
            if their total length reaches self.crop_size_frames.
            Otherwise sets target size (for 2) to n_frames_remaining and repeats 1-4
         """
-        audio_chunks: list[np.ndarray] = []
-        label_chunks: list[np.ndarray] = []
-        note_chunks: list[np.ndarray] = []
         duration_frames_remaining = self.crop_size_frames
         if self.det:
             random.seed(index)
         else:
             random.seed()
-        while duration_frames_remaining > 0:
+        while True:
             audio, label, notes = self._sample_from_single_file(duration_frames_remaining)
             if self.min_rms_db is not None:
                 chunk_rms_db = eval_rms_db(audio)
                 if chunk_rms_db < self.min_rms_db:
                     continue
             assert len(audio) == len(label) * self.config["hop_length"]
-            audio_chunks.append(audio)
-            label_chunks.append(label)
-            note_chunks.append(notes)
-            duration_frames_remaining -= label.shape[0]
-        audio_res = np.concatenate(audio_chunks)
-        label_res = np.concatenate(label_chunks)
-        note_res = np.concatenate(note_chunks)[:50]
-        note_res = np.pad(note_res, ((0, 50 - len(note_res)), (0, 0)), constant_values=-1)
+            break
+        notes = np.concatenate(notes)[:50]
+        notes = np.pad(notes, ((0, 50 - len(notes)), (0, 0)), constant_values=-1)
 
-        assert audio_res.ndim == 1, result.shape
-        assert label_res.ndim == 2, result.shape
-        assert label_res.shape[0] == self.crop_size_frames
+        assert audio.ndim == 1, audio.shape
+        assert audio.shape[0] == self.crop_size_ticks, audio.shape
+        assert label.ndim == 2, label.shape
+        assert label.shape[0] == self.crop_size_frames, label.shape
+        assert notes.shape[0] == 50, notes.shape
+        assert notes.shape[1] == 3, notes.shape
 
-        return dict(x=audio_res, labels=label_res, notes=note_res)
+        return dict(x=audio, labels=label, notes=notes)
 
 
 class S3Callback(transformers.TrainerCallback):
@@ -226,8 +247,11 @@ def make_compute_metrics(config):
                     end_nt = j
                     break
             n = n[:end_nt]
+            if len(n) == 0:
+                print("WARN: frame without notes in batch")
+                continue
             p = np.clip(p, 1, 127)
-            metrics.append(mir_eval.transcription.evaluate(n[:,:2], n[:,2], i, p))
+            metrics.append(mir_eval.transcription.evaluate(n[:,:2], n[:,2], librosa.midi_to_hz(i), librosa.midi_to_hz(p)))
         avg_metrics = defaultdict(int)
         for b in metrics:
             for k, v in b.items():
