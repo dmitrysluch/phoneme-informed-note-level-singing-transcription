@@ -257,7 +257,7 @@ def make_compute_metrics(config):
                 print("WARN: frame without notes in batch")
                 continue
             p = np.clip(p, 1, 127)
-            metrics.append(mir_eval.transcription.evaluate(n[:,:2], n[:,2], librosa.midi_to_hz(i), librosa.midi_to_hz(p)))
+            metrics.append(mir_eval.transcription.evaluate(n[:,:2], librosa.midi_to_hz(n[:,2]), i, librosa.midi_to_hz(p)))
         avg_metrics = defaultdict(int)
         for b in metrics:
             for k, v in b.items():
