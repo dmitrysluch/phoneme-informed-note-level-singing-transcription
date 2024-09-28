@@ -213,7 +213,7 @@ class SignalSampler:
             audio, label, notes = self._sample_from_single_file(self.crop_size_ticks)
             if self.min_rms_db is not None:
                 chunk_rms_db = eval_rms_db(audio)
-                if chunk_rms_db < self.min_rms_db:
+                if chunk_rms_db < self.min_rms_db or len(notes) == 0:
                     continue
             break
         notes = notes[:50]
