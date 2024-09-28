@@ -71,7 +71,9 @@ class TranscriptionModel(nn.Module):
         # print(torch.sigmoid(x_combined).max())
 
         if labels is not None:
-            x_combined = x_combined[:,:labels.shape[1],:]
+            if x_combined.shape != labels.shape:
+                print("WARN: prediction shape doesn't match labels shape, expected:", labels.shape, "got", x_combined.shape)
+                x_combined = x_combined[:,:labels.shape[1],:]
             labels = labels.clamp(0.0, 1.0)
             # plt.pcolor(labels[0].detach().cpu().numpy())
             # plt.savefig(f"labels{self.cnt}.png")

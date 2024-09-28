@@ -46,7 +46,7 @@ class AudioDataset(Dataset):
         end_t = end / self.config['sample_rate']
         start_note = None
         end_note = None
-        for i, (on, off, _) in enumerate(notes):
+        for i, (on, off, _, _, _) in enumerate(notes):
             if start_note is None and on >= start_t:
                 start_note = i
             if off >= end_t:
@@ -93,7 +93,7 @@ class AudioDataset(Dataset):
             if f.samplerate != self.config['sample_rate']:
                 data = resampy.resample(data, f.samplerate, self.config['sample_rate'])
             data = data[:end - start]
-        fftlen = (data.shape[0] + self.config['win_length']) // self.config['hop_length']
+        fftlen = data.shape[0] // self.config['hop_length'] + 1
         labels, notes = self.get_labels(self.labels, path, fftlen, start, end)
         return data, labels, notes
     
@@ -159,10 +159,10 @@ class SignalSampler:
         """
         if crop_size_ticks is None:
             crop_size_ticks = self.crop_size_ticks
-        crop_size_frames = (crop_size_ticks + self.config["win_length"]) / self.config["hop_length"]
+        crop_size_frames = crop_size_ticks // self.config["hop_length"] + 1
         audio_idx = random.randint(0, len(self.dataset) - 1)
         file_len = self.dataset.get_len(audio_idx)
-        file_duration_frames = (file_len + self.config["win_length"]) / self.config["hop_length"]
+        file_duration_frames = file_len // self.config["hop_length"] + 1
         if file_len < crop_size_ticks:
             audio, labels, notes = self.dataset[audio_idx, 0, file_len]
             assert len(audio) == file_len
@@ -197,31 +197,29 @@ class SignalSampler:
            if their total length reaches self.crop_size_frames.
            Otherwise sets target size (for 2) to n_frames_remaining and repeats 1-4
         """
-        duration_frames_remaining = self.crop_size_frames
         if self.det:
             random.seed(index)
         else:
             random.seed()
         while True:
-            audio, label, notes = self._sample_from_single_file(duration_frames_remaining)
+            audio, label, notes = self._sample_from_single_file(self.crop_size_ticks)
             if self.min_rms_db is not None:
                 chunk_rms_db = eval_rms_db(audio)
                 if chunk_rms_db < self.min_rms_db:
                     continue
-            assert len(audio) == len(label) * self.config["hop_length"]
             break
-        notes = np.concatenate(notes)[:50]
+        notes = notes[:50]
         notes = np.pad(notes, ((0, 50 - len(notes)), (0, 0)), constant_values=-1)
 
+        crop_size_frames = self.crop_size_ticks // self.config["hop_length"] + 1
         assert audio.ndim == 1, audio.shape
         assert audio.shape[0] == self.crop_size_ticks, audio.shape
         assert label.ndim == 2, label.shape
-        assert label.shape[0] == self.crop_size_frames, label.shape
+        assert label.shape[0] == crop_size_frames, label.shape
         assert notes.shape[0] == 50, notes.shape
         assert notes.shape[1] == 3, notes.shape
 
         return dict(x=audio, labels=label, notes=notes)
-
 
 class S3Callback(transformers.TrainerCallback):
     def on_epoch_end(self, args, state, control, **kwargs):
