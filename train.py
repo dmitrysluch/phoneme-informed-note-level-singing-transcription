@@ -301,9 +301,9 @@ def train(model_file, train, eval, run, device):
     #     p.requires_grad = True
 
     traind = SignalSampler(config, AudioDataset(config, "train", "labels/train"), len=2**13)
-    evald = SignalSampler(config, AudioDataset(config, "test", "labels/train"), len=1024, det=True)
+    evald = SignalSampler(config, AudioDataset(config, "test", "labels/train"), len=32, det=True)
 
-    ta = transformers.TrainingArguments(output_dir="out", evaluation_strategy="epoch", per_device_train_batch_size=64, per_device_eval_batch_size=64, num_train_epochs=100, report_to="wandb")
+    ta = transformers.TrainingArguments(output_dir="out", evaluation_strategy="epoch", per_device_train_batch_size=64, per_device_eval_batch_size=32, num_train_epochs=100, report_to="wandb")
     trainer = transformers.Trainer(
         model, args=ta, train_dataset=traind, eval_dataset=evald, compute_metrics=make_compute_metrics(config))
     trainer.add_callback(S3Callback())
