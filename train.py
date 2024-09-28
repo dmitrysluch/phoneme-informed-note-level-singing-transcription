@@ -52,10 +52,10 @@ class AudioDataset(Dataset):
 
         start_t = start / self.config['sample_rate']
         end_t = end / self.config['sample_rate']
-        start_note = None
-        end_note = None
+        start_note = len(notes)
+        end_note = len(notes)
         for i, (on, off, _, _, _) in enumerate(notes):
-            if start_note is None and on >= start_t:
+            if start_note == len(notes) and on >= start_t:
                 start_note = i
             if off >= end_t:
                 end_note = i
@@ -182,7 +182,7 @@ class SignalSampler:
         audio, labels, notes = self.dataset[audio_idx, start, end]
         assert len(audio) == crop_size_ticks
         assert len(labels) == crop_size_frames
-        return audio.astype('float32'), labels.astype('float32'), notes.astype('float32')
+        return audio, labels, notes
 
     def __len__(self) -> int:
         return len(self.dataset) * 60 if self.len is None else self.len
