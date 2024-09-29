@@ -8,7 +8,7 @@ from torch.utils.data.dataset import Dataset
 # from sklearn.metrics import precision_score, recall_score
 
 from phn_ast.midi import save_midi
-from phn_ast.decoding import FramewiseDecoder
+from phn_ast.better_decoding import FramewiseDecoder
 from phn_ast.model import TranscriptionModel
 from phn_ast.feature import FeatureExtractor
 import os
