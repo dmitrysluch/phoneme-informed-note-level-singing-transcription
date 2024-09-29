@@ -25,7 +25,7 @@ import resampy
 ONSET_SCALE_FACTOR = 5
 MIN_MIDI = 21
 MAX_MIDI = 108
-OUTPUT_FEATURES = 3 * (MAX_MIDI - MIN_MIDI + 1)
+OUTPUT_FEATURES = 3 * (MAX_MIDI - MIN_MIDI + 2)
 
 import torch.nn as nn
 from torch.utils.data.dataset import Dataset
@@ -63,28 +63,31 @@ class AudioDataset(Dataset):
         notes = notes[start_note:end_note]
         notes[:,:2] = notes[:,:2] - start_t
 
-        # matrix = np.zeros((length, OUTPUT_FEATURES), dtype=np.float32)
-        matrix = np.zeros((length, 3), dtype=np.float32)
+        matrix = np.zeros((length, OUTPUT_FEATURES), dtype=np.float32)
+        # matrix = np.zeros((length, 3), dtype=np.float32)
         for on, off, note, _, _ in notes:
             nt = int(note)
-            if True:#nt >= MIN_MIDI and nt <= MAX_MIDI:
+            if nt >= MIN_MIDI and nt <= MAX_MIDI:
                 oni = int(on * self.config['sample_rate'] / self.config['hop_length'])
                 offi = int(off * self.config['sample_rate'] / self.config['hop_length'])
                 if oni < 0 or offi < 0 or oni >= len(matrix) or offi >= len(matrix):
                     print(f"WARN: note outside of label matrix range path: {path} oni: {oni}, offi: {offi} len(matrix): {len(matrix)}")
                     continue
-            #    matrix[oni, (nt - MIN_MIDI) * 3] = 1
-            #    matrix[offi, (nt - MIN_MIDI) * 3 + 1] = 1
-            #    matrix[oni:offi,(nt - MIN_MIDI) * 3 + 2] = 1
-                matrix[oni, 0] = 1
-                matrix[offi, 1] = 1
-                matrix[oni:offi,2] = 1
+                matrix[oni, (nt - MIN_MIDI) * 3] = 1
+                matrix[offi, (nt - MIN_MIDI) * 3 + 1] = 1
+                matrix[oni:offi,(nt - MIN_MIDI) * 3 + 2] = 1
+                # matrix[oni, 0] = 1
+                # matrix[offi, 1] = 1
+                # matrix[oni:offi,2] = 1
         win = np.array([0.2, 0.6, 1, 0.6, 0.2])
-        # for note in range(0, matrix.shape[1] // 3):
-        #     matrix[:,note * 3] = np.convolve(matrix[:,note * 3], win, mode='same')
-        #     matrix[:,note * 3 + 1] = np.convolve(matrix[:,note * 3 + 1], win, mode='same')
-        matrix[:,0] = np.convolve(matrix[:,0], win, mode='same')
-        matrix[:,1] = np.convolve(matrix[:,1], win, mode='same')
+        for note in range(0, matrix.shape[1] // 3 - 1):
+            matrix[:,note * 3] = np.convolve(matrix[:,note * 3], win, mode='same')
+            matrix[:,note * 3 + 1] = np.convolve(matrix[:,note * 3 + 1], win, mode='same')
+        # matrix[:,0] = np.convolve(matrix[:,0], win, mode='same')
+        # matrix[:,1] = np.convolve(matrix[:,1], win, mode='same')
+        matrix[::OUTPUT_FEATURES-3] = 1 - np.sum(matrix[:OUTPUT_FEATURES-3:3], dim=-1)
+        matrix[::OUTPUT_FEATURES-2] = 1 - np.sum(matrix[1:OUTPUT_FEATURES-3:3], dim=-1)
+        matrix[::OUTPUT_FEATURES-1] = 1 - np.sum(matrix[2:OUTPUT_FEATURES-3:3], dim=-1)
         return matrix, notes[:,:3]
 
     def __len__(self):
@@ -232,7 +235,7 @@ class SignalSampler:
 class S3Callback(transformers.TrainerCallback):
     def on_epoch_end(self, args, state, control, **kwargs):
         model = kwargs['model']
-        model_path = os.path.join("run", f"model{state.epoch}.pt")
+        model_path = os.path.join("run", f"model-pitch{state.epoch}.pt")
         torch.save(model.state_dict(), model_path)
         run(["aws", "s3", "cp", model_path, "s3://chp"])
 
@@ -240,13 +243,13 @@ def make_compute_metrics(config):
     decoder = FramewiseDecoder(config)
     def compute_metrics(eval_prediction):
         preds = eval_prediction.predictions[0]
-        audio = eval_prediction.predictions[1]
-        notes = eval_prediction.predictions[2]
+        # audio = eval_prediction.predictions[1]
+        notes = eval_prediction.predictions[1]
         metrics = []
-        for pred, a, n in zip(preds, audio, notes):
-            p, i = decoder.decode(torch.tensor(pred).unsqueeze(0), audio=torch.tensor(a))
-            i = (np.array(i) * config['hop_length'] / config['sample_rate']).reshape(-1, 2)
-            p = np.array([round(midi) for midi in p])
+        for pred, n in zip(preds, notes):
+            i, p = decoder.decode(labels)
+            p = np.array([round(midi + MIN_MIDI) for midi in p])
+            # Remove padding
             end_nt = len(n)
             for j, (on, off, note) in enumerate(n):
                 if on == -1:
@@ -256,7 +259,7 @@ def make_compute_metrics(config):
             if len(n) == 0:
                 print("WARN: frame without notes in batch")
                 continue
-            p = np.clip(p, 1, 127)
+            p = np.clip(p, MIN_MIDI, MAX_MIDI)
             metrics.append(mir_eval.transcription.evaluate(n[:,:2], librosa.midi_to_hz(n[:,2]), i, librosa.midi_to_hz(p)))
         avg_metrics = defaultdict(int)
         for b in metrics:
@@ -289,11 +292,11 @@ def train(model_file, train, eval, run, device):
     model_state_dict = ckpt['model_state_dict']
 
     model = TranscriptionModel(config)
-    # model.load_state_dict(model_state_dict)
+    model.load_state_dict(model_state_dict)
     ...
     model_size = model.combined_fc.in_features
-    # model.combined_fc = nn.Linear(model_size, OUTPUT_FEATURES)
-    model.load_state_dict(torch.load("run/model14.0.pt"))
+    model.combined_fc = nn.Linear(model_size, OUTPUT_FEATURES)
+    # model.load_state_dict(torch.load("run/model14.0.pt"))
     # for p in model.parameters():
     #     p.requires_grad=False
     

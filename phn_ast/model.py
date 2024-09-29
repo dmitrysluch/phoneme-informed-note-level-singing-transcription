@@ -82,10 +82,22 @@ class TranscriptionModel(nn.Module):
             # plt.savefig(f"preds{self.cnt}.png")
             # plt.clf()
             # self.cnt += 1
-            loss = F.binary_cross_entropy_with_logits(x_combined.reshape(-1), labels.reshape(-1))
+            onsets = x_combined[::3]
+            offsets = x_combined[1::3]
+            frames = x_combined[2::3]
+
+            onsets_lbl = labels[::3]
+            offsets_lbl = labels[1::3]
+            frames_lbl = labels[2::3]
+
+            onsets_loss = F.cross_entropy(onsets, onsets_lbl)
+            offsets_loss = F.cross_entropy(offsets, offsets_lbl)
+            frames_loss = F.cross_entropy(frames, frames_lbl)
+
+            loss = 2 * onsets_loss + offsets_loss + frames_loss
         else:
             loss = None
         
         # print(loss)
 
-        return loss, x_combined, x, notes
+        return loss, x_combined, notes
