@@ -85,9 +85,9 @@ class AudioDataset(Dataset):
             matrix[:,note * 3 + 1] = np.convolve(matrix[:,note * 3 + 1], win, mode='same')
         # matrix[:,0] = np.convolve(matrix[:,0], win, mode='same')
         # matrix[:,1] = np.convolve(matrix[:,1], win, mode='same')
-        matrix[::OUTPUT_FEATURES-3] = 1 - np.sum(matrix[:OUTPUT_FEATURES-3:3], dim=-1)
-        matrix[::OUTPUT_FEATURES-2] = 1 - np.sum(matrix[1:OUTPUT_FEATURES-3:3], dim=-1)
-        matrix[::OUTPUT_FEATURES-1] = 1 - np.sum(matrix[2:OUTPUT_FEATURES-3:3], dim=-1)
+        matrix[:,OUTPUT_FEATURES-3] = 1 - np.sum(matrix[:,:OUTPUT_FEATURES-3:3], axis=-1)
+        matrix[:,OUTPUT_FEATURES-2] = 1 - np.sum(matrix[:,1:OUTPUT_FEATURES-3:3], axis=-1)
+        matrix[:,OUTPUT_FEATURES-1] = 1 - np.sum(matrix[:,2:OUTPUT_FEATURES-3:3], axis=-1)
         return matrix, notes[:,:3]
 
     def __len__(self):
