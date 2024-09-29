@@ -247,7 +247,7 @@ def make_compute_metrics(config):
         notes = eval_prediction.predictions[1]
         metrics = []
         for pred, n in zip(preds, notes):
-            i, p = decoder.decode(labels)
+            i, p = decoder.decode(pred)
             p = np.array([round(midi + MIN_MIDI) for midi in p])
             # Remove padding
             end_nt = len(n)
