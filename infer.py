@@ -44,7 +44,7 @@ def infer(initial_model, model_file, input_file, output_file, pitch_sum, bpm, de
     audio_re = torch.from_numpy(audio_re).float().unsqueeze(0).to(device)
 
     with torch.no_grad():
-        pred = model(audio_re, None)[1]
+        pred = model(audio_re, None, None)[1]
         p, i = decoder.decode(pred, audio=audio_re)
  
     torch.save(pred.detach().cpu(), "pred.pt")
