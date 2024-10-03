@@ -7,13 +7,13 @@ import torch.nn as nn
 import matplotlib.pyplot as plt
 
 from phn_ast.midi import save_midi
-from phn_ast.decoding import FramewiseDecoder
+from phn_ast.better_decoding import FramewiseDecoder
 from phn_ast.model import TranscriptionModel
 
 ONSET_SCALE_FACTOR = 5
 MIN_MIDI = 21
 MAX_MIDI = 108
-OUTPUT_FEATURES = 3 * (MAX_MIDI - MIN_MIDI + 1)
+OUTPUT_FEATURES = 3 * (MAX_MIDI - MIN_MIDI + 2)
 
 def infer(initial_model, model_file, input_file, output_file, pitch_sum, bpm, device):
     ckpt = torch.load(initial_model)
@@ -22,11 +22,11 @@ def infer(initial_model, model_file, input_file, output_file, pitch_sum, bpm, de
 
     model = TranscriptionModel(config)
 
-    # model_size = model.combined_fc.in_features
-    # model.combined_fc = nn.Linear(model_size, OUTPUT_FEATURES)
+    model_size = model.combined_fc.in_features
+    model.combined_fc = nn.Linear(model_size, OUTPUT_FEATURES)
 
     model.load_state_dict(model_state_dict)
-    # model.load_state_dict(torch.load(model_file)) B - моя
+    model.load_state_dict(torch.load(model_file)) # B - моя
     model.to(device)
 
     model.to(device)
