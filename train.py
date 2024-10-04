@@ -322,7 +322,7 @@ def train(model_file, train, eval, run, device):
     trainer = transformers.Trainer(
         model, args=ta, train_dataset=traind, eval_dataset=evald, compute_metrics=make_compute_metrics(config))
     trainer.add_callback(S3Callback())
-    # print(trainer.evaluate())
+    print(trainer.evaluate())
     trainer.train()
 
 
