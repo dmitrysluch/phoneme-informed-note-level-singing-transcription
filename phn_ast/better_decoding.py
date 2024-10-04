@@ -42,7 +42,7 @@ class FramewiseDecoder:
         offset_peaks = self._get_peaks(NUM_PITCHES, offsets, offset_i)
         offset_peak_mask = np.zeros(offset_i.shape, dtype=bool)
         offset_peak_mask[offset_peaks] = 1
-        offset_peak_mask &= onset_peak_mask
+        offset_peak_mask |= onset_peak_mask
 
         intervals = []
         pitches = []
