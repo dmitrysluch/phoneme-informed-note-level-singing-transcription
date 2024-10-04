@@ -308,7 +308,7 @@ def train(model_file, train, eval, run, device):
     ...
     model_size = model.combined_fc.in_features
     model.combined_fc = nn.Linear(model_size, OUTPUT_FEATURES)
-    model.load_state_dict(torch.load("model-pitch15.0.pt"))
+    model.load_state_dict(torch.load("model-on_frame_off5.0.pt"))
     # for p in model.parameters():
     #     p.requires_grad=False
     
@@ -323,7 +323,7 @@ def train(model_file, train, eval, run, device):
         model, args=ta, train_dataset=traind, eval_dataset=evald, compute_metrics=make_compute_metrics(config))
     trainer.add_callback(S3Callback())
     print(trainer.evaluate())
-    trainer.train()
+    # trainer.train()
 
 
 if __name__ == '__main__':
