@@ -92,7 +92,7 @@ class TranscriptionModel(nn.Module):
 
             w = torch.ones(onsets.shape[1]) * 2
             w[w.shape[0] - 1] = 1.0
-            w.to('cuda:0')
+            w = w.to('cuda:0')
 
             onsets_loss = F.cross_entropy(onsets, onsets_lbl, weight=w)
             offsets_loss = F.cross_entropy(offsets, offsets_lbl, weight=w)
