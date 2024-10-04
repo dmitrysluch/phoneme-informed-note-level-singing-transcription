@@ -241,12 +241,13 @@ class S3Callback(transformers.TrainerCallback):
 
 def make_compute_metrics(config):
     decoder = FramewiseDecoder(config)
+    epoch = 0
     def compute_metrics(eval_prediction):
         preds = eval_prediction.predictions[0]
         # audio = eval_prediction.predictions[1]
         notes = eval_prediction.predictions[1]
         metrics = []
-        for pred, n in zip(preds, notes):
+        for j, (pred, n) in enumerate(zip(preds, notes)):
             i, p = decoder.decode(pred)
             p = np.array([round(midi + MIN_MIDI) for midi in p])
             # Remove padding
@@ -261,6 +262,13 @@ def make_compute_metrics(config):
                 continue
             p = np.clip(p, MIN_MIDI, MAX_MIDI)
             metrics.append(mir_eval.transcription.evaluate(n[:,:2], librosa.midi_to_hz(n[:,2]), i, librosa.midi_to_hz(p)))
+            if j == 0:
+                for (s, e), pp in zip(i, p):
+                    plt.plot([s, e], [pp, pp], 'r')
+                for nn in n:
+                    plt.plot([nn[0], nn[1]], [nn[2], nn[2]], 'b')
+                plt.savefig(f"pred{epoch}.png")
+                plt.clf()
         avg_metrics = defaultdict(int)
         for b in metrics:
             for k, v in b.items():
