@@ -264,11 +264,11 @@ def make_compute_metrics(config):
             p = np.clip(p, MIN_MIDI, MAX_MIDI)
             metrics.append(mir_eval.transcription.evaluate(n[:,:2], librosa.midi_to_hz(n[:,2]), i, librosa.midi_to_hz(p)))
             if kk == 0:
-                plt.pcolor(pred.T)
+                plt.pcolor(pred[:,::3].T)
                 for (s, e), pp in zip(i, p):
                     plt.plot([s * config['sample_rate'] / config['hop_length'], e * config['sample_rate'] / config['hop_length']], [pp, pp], 'r')
-                for nn in n:
-                    plt.plot([nn[0] * config['sample_rate'] / config['hop_length'], nn[1] * config['sample_rate'] / config['hop_length']], [nn[2], nn[2]], 'b')
+                for n_ in n:
+                    plt.plot([n_[0] * config['sample_rate'] / config['hop_length'], n_[1] * config['sample_rate'] / config['hop_length']], [n_[2], n_[2]], 'b')
                 plt.savefig(f"pred{epoch}.png")
                 plt.clf()
                 epoch += 1
@@ -307,7 +307,7 @@ def train(model_file, train, eval, run, device):
     ...
     model_size = model.combined_fc.in_features
     model.combined_fc = nn.Linear(model_size, OUTPUT_FEATURES)
-    # model.load_state_dict(torch.load("run/model14.0.pt"))
+    model.load_state_dict(torch.load("model-pitch4.0.pt"))
     # for p in model.parameters():
     #     p.requires_grad=False
     
@@ -317,7 +317,7 @@ def train(model_file, train, eval, run, device):
     traind = SignalSampler(config, AudioDataset(config, "train", "labels/train"), len=2**13, min_rms_db=None)
     evald = SignalSampler(config, AudioDataset(config, "test", "labels/train"), len=1024, det=True)
 
-    ta = transformers.TrainingArguments(output_dir="out", evaluation_strategy="epoch", per_device_train_batch_size=64, per_device_eval_batch_size=64, num_train_epochs=100, report_to="wandb", learning_rate=2e-4)
+    ta = transformers.TrainingArguments(output_dir="out", evaluation_strategy="epoch", per_device_train_batch_size=64, per_device_eval_batch_size=64, num_train_epochs=100, report_to="wandb")
     trainer = transformers.Trainer(
         model, args=ta, train_dataset=traind, eval_dataset=evald, compute_metrics=make_compute_metrics(config))
     trainer.add_callback(S3Callback())
