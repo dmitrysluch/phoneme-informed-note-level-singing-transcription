@@ -62,7 +62,7 @@ def infer(initial_model, model_file, input_file, output_file, pitch_sum, bpm, de
     # plt.savefig("pred.png")
     # plt.clf()
 
-    save_midi(output_file, p, i, add_start_point=True)
+    save_midi(output_file, p, i, bpm=120, add_start_point=True)
 
 
 if __name__ == '__main__':
