@@ -7,7 +7,6 @@ import scipy.special as sc
 
 
 SENSITIVITY = 1
-FRAME_ONSET_MAX_DIFF = 2
 
 class FramewiseDecoder:
     def __init__(self, config):
@@ -50,13 +49,12 @@ class FramewiseDecoder:
 
         for peak in onset_peaks:
             pitch = onset_i[peak]
-            avg_pitch = frames_i[peak]
             offset = peak + 1
-            while offset < len(frames_i) and abs(frames_i[offset] - pitch) <= FRAME_ONSET_MAX_DIFF and not offset_peak_mask[offset]:
-                avg_pitch += frames_i[offset]
+            # while offset < len(frames_i) and frames_i[offset] == pitch and not offset_peak_mask[offset]:
+            while offset < len(frames_i) and not offset_peak_mask[offset]:
                 offset += 1
             intervals.append((peak, offset))
-            pitches.append(round(avg_pitch / (offset - peak)))
+            pitches.append(pitch)
 
         intervals = np.array(intervals).astype('float64').reshape(-1, 2)
         pitches = np.array(pitches)
