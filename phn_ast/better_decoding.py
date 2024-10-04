@@ -7,6 +7,7 @@ import scipy.special as sc
 
 
 SENSITIVITY = 1
+MIN_NOTE_LEN_SEC = 0.05
 
 class FramewiseDecoder:
     def __init__(self, config):
@@ -46,6 +47,7 @@ class FramewiseDecoder:
 
         intervals = []
         pitches = []
+        min_note_len_frames = int(MIN_NOTE_LEN_SEC * self.sr / self.hop_length)
 
         for peak in onset_peaks:
             pitch = onset_i[peak]
@@ -53,6 +55,8 @@ class FramewiseDecoder:
             while offset < len(frames_i) and frames_i[offset] == pitch and not offset_peak_mask[offset]:
             # while offset < len(frames_i) and not offset_peak_mask[offset]:
                 offset += 1
+            if offset - onset < min_note_len_frames:
+                continue
             intervals.append((peak, offset))
             pitches.append(pitch)
 
