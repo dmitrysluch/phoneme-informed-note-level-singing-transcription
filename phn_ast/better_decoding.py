@@ -6,7 +6,7 @@ import librosa
 import scipy.special as sc
 
 
-SENSITIVITY = 1
+SENSITIVITY = 2
 MIN_NOTE_LEN_SEC = 0.05
 
 class FramewiseDecoder:
