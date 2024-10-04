@@ -80,9 +80,9 @@ class AudioDataset(Dataset):
                 # matrix[offi, 1] = 1
                 # matrix[oni:offi,2] = 1
         win = np.array([0.2, 0.6, 1, 0.6, 0.2])
-        for note in range(0, matrix.shape[1] // 3 - 1):
-            matrix[:,note * 3] = np.convolve(matrix[:,note * 3], win, mode='same')
-            matrix[:,note * 3 + 1] = np.convolve(matrix[:,note * 3 + 1], win, mode='same')
+        # for note in range(0, matrix.shape[1] // 3 - 1):
+        #     matrix[:,note * 3] = np.convolve(matrix[:,note * 3], win, mode='same')
+        #     matrix[:,note * 3 + 1] = np.convolve(matrix[:,note * 3 + 1], win, mode='same')
         # matrix[:,0] = np.convolve(matrix[:,0], win, mode='same')
         # matrix[:,1] = np.convolve(matrix[:,1], win, mode='same')
         matrix[:,OUTPUT_FEATURES-3] = 1 - np.sum(matrix[:,:OUTPUT_FEATURES-3:3], axis=-1)
@@ -306,7 +306,7 @@ def train(model_file, train, eval, run, device):
     traind = SignalSampler(config, AudioDataset(config, "train", "labels/train"), len=2**13, min_rms_db=None)
     evald = SignalSampler(config, AudioDataset(config, "test", "labels/train"), len=1024, det=True)
 
-    ta = transformers.TrainingArguments(output_dir="out", evaluation_strategy="epoch", per_device_train_batch_size=64, per_device_eval_batch_size=64, num_train_epochs=100, report_to="wandb")
+    ta = transformers.TrainingArguments(output_dir="out", evaluation_strategy="epoch", per_device_train_batch_size=64, per_device_eval_batch_size=64, num_train_epochs=100, report_to="wandb", learning_rate=2e-4)
     trainer = transformers.Trainer(
         model, args=ta, train_dataset=traind, eval_dataset=evald, compute_metrics=make_compute_metrics(config))
     trainer.add_callback(S3Callback())
