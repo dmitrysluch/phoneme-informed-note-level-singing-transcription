@@ -7,6 +7,7 @@ import scipy.special as sc
 
 
 SENSITIVITY = 2
+FRAMES_SENS = 0.5
 MIN_NOTE_LEN_SEC = 0.05
 
 class FramewiseDecoder:
@@ -26,6 +27,7 @@ class FramewiseDecoder:
     def decode(self, pred):
         pred = np.copy(pred)
         pred[:,-3:-1] /= SENSITIVITY
+        frames[:,-1] /= FRAMES_SENS
         onsets = sc.softmax(pred[:,::3], axis=-1)
         offsets = sc.softmax(pred[:,1::3], axis=-1)
         frames = sc.softmax(pred[:,2::3], axis=-1)
