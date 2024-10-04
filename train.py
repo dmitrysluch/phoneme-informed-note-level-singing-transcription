@@ -267,9 +267,9 @@ def make_compute_metrics(config):
                 plt.pcolor(np.vstack([pred[:,::3].T, pred[:,1::3].T, pred[:,2::3].T]))
                 # plt.pcolor(pred[:,::3].T)
                 for n_ in n:
-                    plt.plot([n_[0] * config['sample_rate'] / config['hop_length'], n_[1] * config['sample_rate'] / config['hop_length']], [n_[2], n_[2]], 'ob')
+                    plt.plot([n_[0] * config['sample_rate'] / config['hop_length'], n_[1] * config['sample_rate'] / config['hop_length']], [n_[2], n_[2]], 'o-b')
                 for (s, e), pp in zip(i, p):
-                    plt.plot([s * config['sample_rate'] / config['hop_length'], e * config['sample_rate'] / config['hop_length']], [pp, pp], 'or')
+                    plt.plot([s * config['sample_rate'] / config['hop_length'], e * config['sample_rate'] / config['hop_length']], [pp, pp], 'o-r')
                 plt.savefig(f"pred{epoch}.png")
                 plt.clf()
                 epoch += 1
