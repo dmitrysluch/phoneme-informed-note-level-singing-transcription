@@ -6,7 +6,7 @@ import librosa
 import scipy.special as sc
 
 
-SENSITIVITY = 3
+SENSITIVITY = 1.5
 
 class FramewiseDecoder:
     def __init__(self, config):
