@@ -307,7 +307,7 @@ def train(model_file, train, eval, run, device):
     ...
     model_size = model.combined_fc.in_features
     model.combined_fc = nn.Linear(model_size, OUTPUT_FEATURES)
-    model.load_state_dict(torch.load("model-pitch4.0.pt"))
+    # model.load_state_dict(torch.load("model-pitch4.0.pt"))
     # for p in model.parameters():
     #     p.requires_grad=False
     
