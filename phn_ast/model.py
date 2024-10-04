@@ -98,7 +98,7 @@ class TranscriptionModel(nn.Module):
             offsets_loss = F.cross_entropy(offsets, offsets_lbl, weight=w)
             frames_loss = F.cross_entropy(frames, frames_lbl)
 
-            loss = onsets_loss + torch.mean(torch.max(torch.sum(onsets, dim=-1), dim=-1).values) / onsets.shape[2] * 10
+            loss = onsets_loss + torch.mean(torch.max(torch.sum(onsets, dim=-1), dim=-1).values) / onsets.shape[2] * 50
         else:
             loss = None
         
