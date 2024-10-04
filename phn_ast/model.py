@@ -90,8 +90,11 @@ class TranscriptionModel(nn.Module):
             offsets_lbl = labels[1::3].transpose(1, 2)
             frames_lbl = labels[2::3].transpose(1, 2)
 
-            onsets_loss = F.cross_entropy(onsets, onsets_lbl)
-            offsets_loss = F.cross_entropy(offsets, offsets_lbl)
+            w = torch.ones(onsets.shape[1]) * 2
+            w[w.shape[0] - 1] = 1.0
+
+            onsets_loss = F.cross_entropy(onsets, onsets_lbl, weight=w)
+            offsets_loss = F.cross_entropy(offsets, offsets_lbl, weight=w)
             frames_loss = F.cross_entropy(frames, frames_lbl)
 
             loss = 2 * onsets_loss + offsets_loss + frames_loss
