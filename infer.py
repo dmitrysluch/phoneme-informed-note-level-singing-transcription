@@ -53,6 +53,9 @@ def infer(initial_model, model_file, input_file, output_file, pitch_sum, bpm, de
     # plt.savefig("inferred.png")
     p = np.array([round(midi + MIN_MIDI) for midi in p])
 
+    print(i)
+    print(p)
+
     # for (f, t), p in zip(i, p):
     #     plt.plot([f, t], [p, p], 'r')
 
