@@ -25,7 +25,7 @@ class FramewiseDecoder:
 
     def decode(self, pred):
         pred = np.copy(pred)
-        pred[:,-3:] /= SENSITIVITY
+        pred[:,-3:-1] /= SENSITIVITY
         onsets = sc.softmax(pred[:,::3], axis=-1)
         offsets = sc.softmax(pred[:,1::3], axis=-1)
         frames = sc.softmax(pred[:,2::3], axis=-1)
