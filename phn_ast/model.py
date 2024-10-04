@@ -82,21 +82,19 @@ class TranscriptionModel(nn.Module):
             # plt.savefig(f"preds{self.cnt}.png")
             # plt.clf()
             # self.cnt += 1
-            onsets = x_combined[::3]
-            offsets = x_combined[1::3]
-            frames = x_combined[2::3]
+            onsets = x_combined[::3].transpose(1, 2)
+            offsets = x_combined[1::3].transpose(1, 2)
+            frames = x_combined[2::3].transpose(1, 2)
 
-            onsets_lbl = labels[::3]
-            offsets_lbl = labels[1::3]
-            frames_lbl = labels[2::3]
+            onsets_lbl = labels[::3].transpose(1, 2)
+            offsets_lbl = labels[1::3].transpose(1, 2)
+            frames_lbl = labels[2::3].transpose(1, 2)
 
-            w = torch.ones(onsets.shape[-1])
-            w[-1] = 5.0
-            onsets_loss = F.cross_entropy(onsets, onsets_lbl, weight=w)
+            onsets_loss = F.cross_entropy(onsets, onsets_lbl)
             offsets_loss = F.cross_entropy(offsets, offsets_lbl)
             frames_loss = F.cross_entropy(frames, frames_lbl)
 
-            loss = onsets_loss
+            loss = 2 * onsets_loss + offsets_lbl + frames_loss
         else:
             loss = None
         
