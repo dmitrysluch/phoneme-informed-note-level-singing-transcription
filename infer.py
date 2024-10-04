@@ -45,9 +45,9 @@ def infer(initial_model, model_file, input_file, output_file, pitch_sum, bpm, de
 
     with torch.no_grad():
         pred = model(audio_re, None, None)[1].squeeze(0)
-        p, i = decoder.decode(pred.cpu().detach().numpy())
+        i, p = decoder.decode(pred.cpu().detach().numpy())
     
-    print(p.shape, i.shape)
+    # print(p.shape, i.shape)
     # torch.save(pred.detach().cpu(), "pred.pt")
     # plt.pcolor(pred.detach().cpu().numpy()[0,1000:2000])
     # plt.savefig("inferred.png")
