@@ -55,7 +55,7 @@ class FramewiseDecoder:
             intervals.append((peak, offset))
             pitches.append(pitch)
 
-        intervals = np.array(intervals).astype('float64')
+        intervals = np.array(intervals).astype('float64').reshape(-1, 2)
         pitches = np.array(pitches)
         intervals *= self.hop_length / self.sr
         return intervals, pitches
