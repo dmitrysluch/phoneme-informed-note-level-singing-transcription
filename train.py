@@ -264,7 +264,7 @@ def make_compute_metrics(config):
             p = np.clip(p, MIN_MIDI, MAX_MIDI)
             metrics.append(mir_eval.transcription.evaluate(n[:,:2], librosa.midi_to_hz(n[:,2]), i, librosa.midi_to_hz(p)))
             if kk == 0:
-                plt.pcolor(pred[:,::3].T)
+                plt.pcolor(np.vstack(pred[:,::3].T, pred[:,1::3].T, pred[:,2::3].T))
                 for (s, e), pp in zip(i, p):
                     plt.plot([s * config['sample_rate'] / config['hop_length'], e * config['sample_rate'] / config['hop_length']], [pp, pp], 'r')
                 for n_ in n:
