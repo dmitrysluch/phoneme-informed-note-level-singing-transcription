@@ -235,7 +235,7 @@ class SignalSampler:
 class S3Callback(transformers.TrainerCallback):
     def on_epoch_end(self, args, state, control, **kwargs):
         model = kwargs['model']
-        model_path = os.path.join("run", f"model-pitch{state.epoch}.pt")
+        model_path = os.path.join("run", f"model-on_frame_off{state.epoch}.pt")
         torch.save(model.state_dict(), model_path)
         run(["aws", "s3", "cp", model_path, "s3://chp"])
 
@@ -266,10 +266,10 @@ def make_compute_metrics(config):
             if kk == 0:
                 # plt.pcolor(np.vstack([pred[:,::3].T, pred[:,1::3].T, pred[:,2::3].T]))
                 plt.pcolor(pred[:,::3].T)
-                for (s, e), pp in zip(i, p):
-                    plt.plot([s * config['sample_rate'] / config['hop_length'], e * config['sample_rate'] / config['hop_length']], [pp, pp], 'r')
                 for n_ in n:
                     plt.plot([n_[0] * config['sample_rate'] / config['hop_length'], n_[1] * config['sample_rate'] / config['hop_length']], [n_[2], n_[2]], 'b')
+                for (s, e), pp in zip(i, p):
+                    plt.plot([s * config['sample_rate'] / config['hop_length'], e * config['sample_rate'] / config['hop_length']], [pp, pp], 'r')
                 plt.savefig(f"pred{epoch}.png")
                 plt.clf()
                 epoch += 1
