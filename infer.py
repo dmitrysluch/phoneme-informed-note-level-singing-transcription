@@ -41,20 +41,16 @@ def infer(initial_model, model_file, input_file, output_file, pitch_sum, bpm, de
     if audio.ndim > 1:
         audio = audio[:, 0]
     audio_re = librosa.resample(audio, orig_sr=sr, target_sr=config['sample_rate'])
-    audio_re = torch.from_numpy(audio_re).float().unsqueeze(0).to(device)
+    audio_re = torch.from_numpy(audio_re).float().to(device)
 
     with torch.no_grad():
-        pred = model(audio_re, None, None)[1][0]
+        pred = model(audio_re, None, None)[1]
         p, i = decoder.decode(pred.cpu().detach().numpy())
  
     torch.save(pred.detach().cpu(), "pred.pt")
     # plt.pcolor(pred.detach().cpu().numpy()[0,1000:2000])
     # plt.savefig("inferred.png")
-
-    scale_factor = config['hop_length'] / config['sample_rate']
-
-    i = (np.array(i) * scale_factor).reshape(-1, 2)
-    p = np.array([round(midi) for midi in p])
+    p = np.array([round(midi + MIN_MIDI) for midi in p])
 
     save_midi(output_file, p, i, bpm)
 

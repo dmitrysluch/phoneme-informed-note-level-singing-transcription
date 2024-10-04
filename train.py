@@ -303,7 +303,7 @@ def train(model_file, train, eval, run, device):
     # for p in model.combined_fc.parameters():
     #     p.requires_grad = True
 
-    traind = SignalSampler(config, AudioDataset(config, "train", "labels/train"), len=2**13)
+    traind = SignalSampler(config, AudioDataset(config, "train", "labels/train"), len=2**13, min_rms_db=None)
     evald = SignalSampler(config, AudioDataset(config, "test", "labels/train"), len=1024, det=True)
 
     ta = transformers.TrainingArguments(output_dir="out", evaluation_strategy="epoch", per_device_train_batch_size=64, per_device_eval_batch_size=64, num_train_epochs=100, report_to="wandb")
