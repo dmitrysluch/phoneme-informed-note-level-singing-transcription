@@ -264,10 +264,11 @@ def make_compute_metrics(config):
             p = np.clip(p, MIN_MIDI, MAX_MIDI)
             metrics.append(mir_eval.transcription.evaluate(n[:,:2], librosa.midi_to_hz(n[:,2]), i, librosa.midi_to_hz(p)))
             if kk == 0:
+                plt.pcolor(pred)
                 for (s, e), pp in zip(i, p):
-                    plt.plot([s, e], [pp, pp], 'r')
+                    plt.plot([s * config['sample_rate'] / config['hop_length'], e * config['sample_rate'] / config['hop_length']], [pp, pp], 'r')
                 for nn in n:
-                    plt.plot([nn[0], nn[1]], [nn[2], nn[2]], 'b')
+                    plt.plot([nn[0] * config['sample_rate'] / config['hop_length'], nn[1] * config['sample_rate'] / config['hop_length']], [nn[2], nn[2]], 'b')
                 plt.savefig(f"pred{epoch}.png")
                 plt.clf()
                 epoch += 1
