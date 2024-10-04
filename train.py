@@ -269,6 +269,7 @@ def make_compute_metrics(config):
                     plt.plot([nn[0], nn[1]], [nn[2], nn[2]], 'b')
                 plt.savefig(f"pred{epoch}.png")
                 plt.clf()
+                epoch += 1
         avg_metrics = defaultdict(int)
         for b in metrics:
             for k, v in b.items():
