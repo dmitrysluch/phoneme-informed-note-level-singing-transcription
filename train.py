@@ -243,6 +243,7 @@ def make_compute_metrics(config):
     decoder = FramewiseDecoder(config)
     epoch = 0
     def compute_metrics(eval_prediction):
+        nonlocal epoch
         preds = eval_prediction.predictions[0]
         # audio = eval_prediction.predictions[1]
         notes = eval_prediction.predictions[1]
