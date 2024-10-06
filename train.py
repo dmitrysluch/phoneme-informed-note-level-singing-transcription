@@ -81,9 +81,9 @@ class AudioDataset(Dataset):
                 # matrix[offi, 1] = 1
                 # matrix[oni:offi,2] = 1
         win = np.array([0.2, 0.6, 1, 0.6, 0.2])
-        for note in range(0, matrix.shape[1] // 3 - 1):
-            matrix[:,note * 3] = np.convolve(matrix[:,note * 3], win, mode='same')
-            matrix[:,note * 3 + 1] = np.convolve(matrix[:,note * 3 + 1], win, mode='same')
+        # for note in range(0, matrix.shape[1] // 3 - 1):
+        #     matrix[:,note * 3] = np.convolve(matrix[:,note * 3], win, mode='same')
+        #     matrix[:,note * 3 + 1] = np.convolve(matrix[:,note * 3 + 1], win, mode='same')
         # matrix[:,0] = np.convolve(matrix[:,0], win, mode='same')
         # matrix[:,1] = np.convolve(matrix[:,1], win, mode='same')
         matrix[:,OUTPUT_FEATURES-3] = 1 - np.sum(matrix[:,:OUTPUT_FEATURES-3:3], axis=-1)
