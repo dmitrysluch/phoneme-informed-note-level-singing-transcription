@@ -26,10 +26,7 @@ def infer(initial_model, model_file, input_file, output_file, pitch_sum, bpm, de
     model.combined_fc = nn.Linear(model_size, OUTPUT_FEATURES)
 
     # model.load_state_dict(model_state_dict)
-    model.load_state_dict(torch.load(model_file)) # B - моя
-    model.to(device)
-
-    model.to(device)
+    model.load_state_dict("model-pitch15.0.pt") # B - моя
     model.eval()
 
     model.pitch_sum = pitch_sum
