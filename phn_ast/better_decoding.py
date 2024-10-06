@@ -51,16 +51,27 @@ class FramewiseDecoder:
         pitches = []
         min_note_len_frames = int(MIN_NOTE_LEN_SEC * self.sr / self.hop_length)
 
-        for peak in onset_peaks:
-            pitch = onset_i[peak]
-            offset = peak + 1
-            while offset < len(frames_i) and frames_i[offset] == pitch and not offset_peak_mask[offset]:
-            # while offset < len(frames_i) and not offset_peak_mask[offset]:
-                offset += 1
-            if offset - peak < min_note_len_frames:
-                continue
-            intervals.append((peak, offset))
-            pitches.append(pitch)
+        # for peak in onset_peaks:
+        #     pitch = onset_i[peak]
+        #     offset = peak + 1
+        #     while offset < len(frames_i) and frames_i[offset] == pitch and not offset_peak_mask[offset]:
+        #     # while offset < len(frames_i) and not offset_peak_mask[offset]:
+        #         offset += 1
+        #     if offset - peak < min_note_len_frames:
+        #         continue
+        #     intervals.append((peak, offset))
+        #     pitches.append(pitch)
+
+        last_pitch = NUM_PITCHES - 1
+        last_onset = -1
+        for i, p in frames_i:
+            if (p != last_pitch or offset_peak_mask[i]):
+                if last_pitch != NUM_PITCHES - 1 and i - last_onset >= min_note_len_frames:
+                    intervals.append((last_onset, i))
+                    pitches.append(p)
+                last_onset = i
+                last_pitch
+
 
         intervals = np.array(intervals).astype('float64').reshape(-1, 2)
         pitches = np.array(pitches)
