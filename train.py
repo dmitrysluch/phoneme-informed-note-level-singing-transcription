@@ -274,6 +274,7 @@ def make_compute_metrics(config):
                     plt.plot([n_[0] * config['sample_rate'] / config['hop_length'], n_[1] * config['sample_rate'] / config['hop_length']], [n_[2], n_[2]], 'o-b')
                 for (s, e), pp in zip(i, p):
                     plt.plot([s * config['sample_rate'] / config['hop_length'], e * config['sample_rate'] / config['hop_length']], [pp, pp], 'o-r')
+                plt.colorbar()
                 plt.savefig(f"pred{epoch}.png")
                 plt.clf()
                 epoch += 1
