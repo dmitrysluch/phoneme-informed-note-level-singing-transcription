@@ -90,7 +90,7 @@ class TranscriptionModel(nn.Module):
             offsets_lbl = labels[1::3].transpose(1, 2)
             frames_lbl = labels[2::3].transpose(1, 2)
 
-            w = torch.ones(onsets.shape[1]) * 1.5
+            w = torch.ones(onsets.shape[1]) * 3
             w[w.shape[0] - 1] = 1.0
             w = w.to('cuda:0')
 
