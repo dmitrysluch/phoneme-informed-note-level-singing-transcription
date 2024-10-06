@@ -68,7 +68,7 @@ class FramewiseDecoder:
             if (p != last_pitch or offset_peak_mask[i]):
                 if last_pitch != NUM_PITCHES - 1 and i - last_onset >= min_note_len_frames:
                     intervals.append((last_onset, i))
-                    pitches.append(p)
+                    pitches.append(last_pitch)
                 last_onset = i
                 last_pitch = p
 
