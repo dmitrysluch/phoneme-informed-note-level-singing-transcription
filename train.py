@@ -263,7 +263,7 @@ def make_compute_metrics(config):
                 continue
             p = np.clip(p, MIN_MIDI, MAX_MIDI)
             metrics.append(mir_eval.transcription.evaluate(n[:,:2], librosa.midi_to_hz(n[:,2]), i, librosa.midi_to_hz(p)))
-            if kk == 0:
+            if kk == 1:
                 plt.pcolor(np.vstack([pred[:,::3].T, pred[:,1::3].T, pred[:,2::3].T]))
                 # plt.pcolor(pred[:,::3].T)
                 for n_ in n:
