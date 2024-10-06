@@ -27,6 +27,7 @@ def infer(initial_model, model_file, input_file, output_file, pitch_sum, bpm, de
 
     # model.load_state_dict(model_state_dict)
     model.load_state_dict(torch.load("model-pitch15.0.pt")) # B - моя
+    model = model.to(device)
     model.eval()
 
     model.pitch_sum = pitch_sum
