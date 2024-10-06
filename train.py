@@ -8,7 +8,7 @@ from torch.utils.data.dataset import Dataset
 # from sklearn.metrics import precision_score, recall_score
 
 from phn_ast.midi import save_midi
-from phn_ast.better_decoding import FramewiseDecoder, SENSITIVITY
+from phn_ast.better_decoding import FramewiseDecoder, SENSITIVITY, FRAMES_SENS
 from phn_ast.model import TranscriptionModel
 from phn_ast.feature import FeatureExtractor
 import os
@@ -267,7 +267,7 @@ def make_compute_metrics(config):
                 plt.pcolor(np.vstack(
                     [pred[:,:-3:3].T - pred[:,-3:-2].T / SENSITIVITY, 
                      pred[:,1:-3:3].T  - pred[:,-2:-1].T / SENSITIVITY, 
-                     pred[:,2:-3:3].T- pred[:,-1:].T]
+                     pred[:,2:-3:3].T- pred[:,-1:].T / FRAMES_SENS] 
                 ))
                 # plt.pcolor(pred[:,::3].T)
                 for n_ in n:

@@ -6,7 +6,7 @@ import librosa
 import scipy.special as sc
 
 
-SENSITIVITY = 2
+SENSITIVITY = 1.5
 FRAMES_SENS = 0.5
 MIN_NOTE_LEN_SEC = 0.05
 
