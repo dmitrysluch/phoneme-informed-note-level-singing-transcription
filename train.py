@@ -265,11 +265,13 @@ def make_compute_metrics(config):
             p = np.clip(p, MIN_MIDI, MAX_MIDI)
             metrics.append(mir_eval.transcription.evaluate(n[:,:2], librosa.midi_to_hz(n[:,2]), i, librosa.midi_to_hz(p)))
             if kk == 1:
-                predsm = sc.softmax(pred, axis=-1)
+                onsetssm = sc.softmax(pred[:,::3], axis=-1)
+                onffsetssm = sc.softmax(pred[:,1::3], axis=-1)
+                framessm = sc.softmax(pred[:,2::3], axis=-1)
                 plt.pcolor(np.vstack(
-                    [predsm[:,:-3:3].T - predsm[:,-3:-2].T / SENSITIVITY, 
-                     predsm[:,1:-3:3].T  - predsm[:,-2:-1].T / SENSITIVITY, 
-                     predsm[:,2:-3:3].T- predsm[:,-1:].T / FRAMES_SENS] 
+                    [onsetssm[:,:-1].T - onsetssm[:,-1:].T / SENSITIVITY, 
+                     onffsetssm[:,:-1].T - onffsetssm[:,-1:].T / SENSITIVITY, 
+                     framessm[:,:-1].T - framessm[:,-1:].T / FRAMES_SENS] 
                 ))
                 # plt.pcolor(pred[:,::3].T)
                 for n_ in n:
