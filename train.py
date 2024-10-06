@@ -264,7 +264,7 @@ def make_compute_metrics(config):
                 continue
             p = np.clip(p, MIN_MIDI, MAX_MIDI)
             metrics.append(mir_eval.transcription.evaluate(n[:,:2], librosa.midi_to_hz(n[:,2]), i, librosa.midi_to_hz(p)))
-            if kk % 5 == 1:
+            if kk < 6 and kk >= 1:
                 onsetssm = sc.softmax(pred[:,::3], axis=-1)
                 onffsetssm = sc.softmax(pred[:,1::3], axis=-1)
                 framessm = sc.softmax(pred[:,2::3], axis=-1)
@@ -279,9 +279,10 @@ def make_compute_metrics(config):
                 for (s, e), pp in zip(i, p):
                     plt.plot([s * config['sample_rate'] / config['hop_length'], e * config['sample_rate'] / config['hop_length']], [pp, pp], 'o-r')
                 plt.colorbar()
-                plt.savefig(f"pred{epoch}.png")
+                plt.savefig(f"pred{kk}-{epoch}.png")
                 plt.clf()
-                epoch += 1
+                if kk == 5:
+                    epoch += 1
         avg_metrics = defaultdict(int)
         for b in metrics:
             for k, v in b.items():
@@ -332,7 +333,7 @@ def train(model_file, train, eval, run, device):
         model, args=ta, train_dataset=traind, eval_dataset=evald, compute_metrics=make_compute_metrics(config))
     trainer.add_callback(S3Callback())
     print(trainer.evaluate())
-    # trainer.train()
+    trainer.train()
 
 
 if __name__ == '__main__':

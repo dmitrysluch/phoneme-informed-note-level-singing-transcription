@@ -57,8 +57,8 @@ class FramewiseDecoder:
             while offset < len(frames_i) and frames_i[offset] == pitch and not offset_peak_mask[offset]:
             # while offset < len(frames_i) and not offset_peak_mask[offset]:
                 offset += 1
-            if offset - peak < min_note_len_frames:
-                continue
+            # if offset - peak < min_note_len_frames:
+            #     continue
             intervals.append((peak, offset))
             pitches.append(pitch)
 
