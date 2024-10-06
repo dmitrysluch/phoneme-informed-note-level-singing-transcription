@@ -323,7 +323,7 @@ def train(model_file, train, eval, run, device):
         model, args=ta, train_dataset=traind, eval_dataset=evald, compute_metrics=make_compute_metrics(config))
     trainer.add_callback(S3Callback())
     print(trainer.evaluate())
-    # trainer.train()
+    trainer.train()
 
 
 if __name__ == '__main__':
