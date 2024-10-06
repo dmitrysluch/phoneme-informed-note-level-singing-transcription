@@ -8,7 +8,7 @@ import scipy.special as sc
 
 SENSITIVITY = 1.5
 FRAMES_SENS = 0.5
-MIN_NOTE_LEN_SEC = 0.05
+MIN_NOTE_LEN_SEC = 0.08
 
 class FramewiseDecoder:
     def __init__(self, config):
