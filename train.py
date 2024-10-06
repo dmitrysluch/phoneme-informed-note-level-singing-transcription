@@ -21,6 +21,7 @@ import mir_eval
 from collections import defaultdict
 import soundfile as sf
 import resampy
+import scipy.special as sc
 
 ONSET_SCALE_FACTOR = 5
 MIN_MIDI = 21
@@ -264,10 +265,11 @@ def make_compute_metrics(config):
             p = np.clip(p, MIN_MIDI, MAX_MIDI)
             metrics.append(mir_eval.transcription.evaluate(n[:,:2], librosa.midi_to_hz(n[:,2]), i, librosa.midi_to_hz(p)))
             if kk == 1:
+                predsm = sc.softmax(pred, axis=-1)
                 plt.pcolor(np.vstack(
-                    [pred[:,:-3:3].T - pred[:,-3:-2].T / SENSITIVITY, 
-                     pred[:,1:-3:3].T  - pred[:,-2:-1].T / SENSITIVITY, 
-                     pred[:,2:-3:3].T- pred[:,-1:].T / FRAMES_SENS] 
+                    [predsm[:,:-3:3].T - predsm[:,-3:-2].T / SENSITIVITY, 
+                     predsm[:,1:-3:3].T  - predsm[:,-2:-1].T / SENSITIVITY, 
+                     predsm[:,2:-3:3].T- predsm[:,-1:].T / FRAMES_SENS] 
                 ))
                 # plt.pcolor(pred[:,::3].T)
                 for n_ in n:
