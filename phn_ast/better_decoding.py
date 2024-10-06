@@ -70,7 +70,7 @@ class FramewiseDecoder:
                     intervals.append((last_onset, i))
                     pitches.append(p)
                 last_onset = i
-                last_pitch
+                last_pitch = p
 
 
         intervals = np.array(intervals).astype('float64').reshape(-1, 2)
